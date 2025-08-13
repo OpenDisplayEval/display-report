@@ -1,53 +1,64 @@
-[tool.poetry]
+[project]
 name = "ole-tools"
 version = "0.1.0"
 description = ""
-authors = ["Unknown"]
-packages = [{ include = "ole" }]
+authors = [{ name = "Unknown" }]
+requires-python = ">=3.12, <3.13"
+dependencies = [
+    "requests>=2.31.0,<3.0.0",
+    "colour-science>=0.4.4,<0.5.0",
+    "colour-datasets>=0.2.5,<0.3.0",
+    "colour-specio>=0.3.0,<0.4.0",
+    "numpy>=1.25.0,<2.0.0",
+    "scipy>=1.10.1,<2.0.0",
+    "xxhash>=3.2.0,<4.0.0",
+    "matplotlib>=3.7.1,<4.0.0",
+    "scikit-learn>=1.2.2,<2.0.0",
+    "pandas>=2.2.0,<3.0.0",
+    "opencv-python>=4.8.1.78,<5.0.0",
+    "pymoo>=0.6.1.1,<0.7.0",
+    "telnetlib3>=2.0.4,<3.0.0",
+    "exscript>=2.6.28,<3.0.0",
+]
 
-[tool.poetry.scripts]
-ole_measure = 'ole.scripts.measure_display:main'
-ole_analyze = 'ole.scripts.analyze_display_measurements:main'
-ole_anonymize = 'ole.scripts.strip_metadata:main'
+[project.optional-dependencies]
+dev = [
+    "jupyter",
+    "black",
+    "pytest",
+    "pytest-xdist",
+    "pyright",
+    "ruff",
+    "flynt",
+    "isort",
+    "ipykernel",
+    "networkx>=2.7,<3",
+    "opencolorio>=2,<3",
+    "tqdm",
+    "echion",
+]
 
-[tool.poetry.dependencies]
-requests = "^2.31.0"
-python = "~3.12"
-colour-science = "^0.4.4"
-colour-datasets = "^0.2.5"
-colour-specio = "^0.4.0a0"
-numpy = "^1.25.0"
-scipy = "^1.10.1"
-xxhash = "^3.2.0"
-matplotlib = "^3.7.1"
-scikit-learn = "^1.2.2"
-pandas = "^2.2.0"
-opencv-python = "^4.8.1.78"
-pymoo = "^0.6.1.1"
-telnetlib3 = "^2.0.4"
-exscript = "^2.6.28"
-
-[tool.poetry.dev-dependencies]
-jupyter = "*"
-black = "*"
-pytest = "*"
-pytest-xdist = "*"
-pyright = "*"
-ruff = "*"
-flynt = "*"
-isort = "*"
-ipykernel = "*"
-networkx = ">= 2.7, < 3"
-opencolorio = ">= 2, < 3"
-tqdm = "*"
-echion = "*"
-colour-science = { path = "colour-science", develop = true }
-colour-datasets = { path = "colour-datasets", develop = true }
-colour-specio = { path = "colour-specio", develop = true }
+[project.scripts]
+ole_measure = "ole.scripts.measure_display:main"
+ole_analyze = "ole.scripts.analyze_display_measurements:main"
+ole_anonymize = "ole.scripts.strip_metadata:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ole"]
+include = ["LICENSE"]
+exclude = ["data/"]
+
+[tool.uv.sources]
+colour-specio = { path = "colour-specio", editable = true }
+colour-science = { path = "colour-science", editable = true }
+colour-datasets = { path = "colour-datasets", editable = true }
+
+[dependency-groups]
+dev = ["colour-datasets", "colour-science", "colour-specio"]
 
 [tool.codespell]
 ignore-words-list = 'co-ordinates,exitance,hart,ist'
