@@ -6,6 +6,7 @@ Center LED Color Accuracy Report
 from dataclasses import dataclass
 from functools import partial
 from textwrap import dedent
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -15,7 +16,6 @@ from colour.colorimetry.spectrum import (
 )
 from colour.colorimetry.tristimulus_values import sd_to_XYZ
 from colour.difference.delta_e import delta_E_CIE2000
-from colour.hints import NDArrayBoolean, NDArrayFloat
 from colour.models.cie_lab import XYZ_to_Lab
 from colour.models.cie_luv import Luv_to_uv, XYZ_to_Luv
 from colour.models.cie_xyy import XYZ_to_xy, xy_to_XYZ
@@ -29,6 +29,9 @@ from specio.fileio import (
     MeasurementList_Notes,
     load_measurements,
 )
+
+if TYPE_CHECKING:
+    from colour.hints import NDArrayBoolean, NDArrayFloat
 
 
 @dataclass
@@ -449,7 +452,7 @@ class ColourPrecisionAnalysis:
                 Mean dXYZ:   {np.mean(self.error["XYZ"]):>6.2f}    95% < {np.percentile((self.error["XYZ"]),95):>6.2f}
                 Mean dITP:   {np.mean(self.error["ICtCp"]):>6.2f}    95% < {np.percentile((self.error["ICtCp"]),95):>6.2f}
                 Mean dE2000: {np.mean(self.error["dE2000"]):>6.2f}    95% < {np.percentile((self.error["dE2000"]),95):>6.2f}
-            """  # noqa: E501
+            """
         )
         # fmt: on
 

@@ -1,0 +1,53 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "import": [
+    "@cspell/dict-python/cspell-ext.json",
+    "@cspell/dict-data-science/cspell-ext.json"
+  ],
+  "words": [
+    "aeropress",
+    "ASTM",
+    "astype",
+    "baudrate",
+    "colourspace",
+    "COLOURSPACES",
+    "colour",
+    "exscript",
+    "fluorilon",
+    "greyscale",
+    "gridspec",
+    "icvfx",
+    "lambertian",
+    "loggable",
+    "matplotlib",
+    "Munsell",
+    "ndarray",
+    "portafilter",
+    "protobuf",
+    "pymoo",
+    "pyright",
+    "scipy",
+    "sklearn",
+    "specio",
+    "Spectroradiometers",
+    "telnetlib",
+    "tristimulus",
+    "whitepoint",
+    "xxhash"
+  ],
+  "ignorePaths": [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "colour-science/**",
+    "colour-datasets/**",
+    "colour-specio/**",
+    "uv.lock"
+  ],
+  "ignoreRegExpList": [
+    "/0x[0-9a-fA-F]+/g"
+  ]
+}

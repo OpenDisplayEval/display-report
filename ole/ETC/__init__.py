@@ -6,8 +6,8 @@ from .analysis import (
 from .pdf import generate_report_page
 
 __all__ = [
-    "generate_report_page",
+    "ColourPrecisionAnalysis",
     "ReflectanceData",
     "analyze_measurements_from_file",
-    "ColourPrecisionAnalysis",
+    "generate_report_page",
 ]

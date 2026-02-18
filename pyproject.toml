@@ -3,7 +3,7 @@ name = "ole-tools"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Unknown" }]
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "requests>=2.31.0,<3",
     "colour-science",
@@ -29,13 +29,12 @@ ole_anonymize = "ole.scripts.strip_metadata:main"
 [dependency-groups]
 dev = [
     "jupyter>=1.0.0,<2",
-    "black>=23.3.0,<24",
     "pytest>=7.4.0,<8",
     "pytest-xdist>=3.3.1,<4",
     "pyright>=1.1.332",
     "ruff>=0.1.0",
-    "flynt>=1.0.1,<2",
-    "isort>=5.12.0,<6",
+    "invoke>=2.2.0",
+    "pre-commit>=4.2.0",
     "ipykernel>=6.29.0,<7",
     "networkx>=2.7,<3",
     "opencolorio>=2,<3",
@@ -54,33 +53,25 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["ole"]
 
-[tool.codespell]
-ignore-words-list = 'co-ordinates,exitance,hart,ist'
-skip = 'BIBLIOGRAPHY.bib,CONTRIBUTORS.rst'
-
-[tool.flynt]
-line_length = 999
-
-[tool.isort]
-ensure_newline_before_comments = true
-force_grid_wrap = 0
-include_trailing_comma = true
-line_length = 88
-multi_line_output = 3
-skip_glob = ["colour/**/__init__.py"]
-split_on_trailing_comma = true
-use_parentheses = true
-
 [tool.pyright]
+include = ["ole"]
+pythonVersion = "3.14"
+typeCheckingMode = "standard"
 reportMissingImports = false
 reportMissingModuleSource = false
 reportUnboundVariable = false
 reportUnnecessaryCast = true
-reportUnnecessaryTypeIgnorComment = true
+reportUnnecessaryTypeIgnoreComment = true
 reportUnsupportedDunderAll = false
 reportUnusedExpression = false
+reportUnusedImport = true
+reportUnusedVariable = true
+reportMissingParameterType = true
+reportDuplicateImport = true
+reportInconsistentConstructor = true
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 addopts = "-n auto --dist=loadscope --durations=5"
 filterwarnings = [
     "ignore::RuntimeWarning",
@@ -101,95 +92,49 @@ filterwarnings = [
 ]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py314"
 line-length = 88
+exclude = [
+    "colour-science",
+    "colour-datasets",
+    "colour-specio",
+]
+
+[tool.ruff.lint]
 select = [
-    "A",   # flake8-builtins
-    "ARG", # flake8-unused-arguments
-    # "ANN", # flake8-annotations
-    "B", # flake8-bugbear
-    # "BLE", # flake8-blind-except
-    "C4", # flake8-comprehensions
-    # "C90", # mccabe
-    # "COM", # flake8-commas
-    "DTZ", # flake8-datetimez
-    "D",   # pydocstyle
-    "E",   # pydocstyle
-    # "ERA", # eradicate
-    # "EM", # flake8-errmsg
-    "EXE", # flake8-executable
-    "F",   # flake8
-    # "FBT", # flake8-boolean-trap
-    "G",   # flake8-logging-format
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
     "I",   # isort
-    "ICN", # flake8-import-conventions
-    "INP", # flake8-no-pep420
-    "ISC", # flake8-implicit-str-concat
-    "N",   # pep8-naming
-    # "PD", # pandas-vet
-    "PIE", # flake8-pie
-    "PGH", # pygrep-hooks
-    "PL",  # pylint
-    # "PT", # flake8-pytest-style
-    # "PTH", # flake8-use-pathlib [Enable]    "Q",   # flake8-quotes
-    "RET", # flake8-return
-    "RUF", # Ruff
-    "S",   # flake8-bandit
-    "SIM", # flake8-simplify
-    "T10", # flake8-debugger
-    "T20", # flake8-print
-    # "TCH", # flake8-type-checking
-    "TID", # flake8-tidy-imports
-    "TRY", # tryceratops
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
-    "W",   # pydocstyle
-    "YTT", # flake8-2020
+    "ARG", # flake8-unused-arguments
+    "C90", # mccabe complexity
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # Ruff-specific rules
 ]
 ignore = [
-    "B008",
-    "B905",
-    "D104",
-    "D200",
-    "D202",
-    "D205",
-    "D301",
-    "D400",
-    "I001",
-    "N801",
-    "N802",
-    "N803",
-    "N806",
-    "N813",
-    "N815",
-    "N816",
-    "PGH003",
-    "PIE804",
-    "PLE0605",
-    "PLR0911",
-    "PLR0912",
-    "PLR0913",
-    "PLR0915",
-    "PLR2004",
-    "RET504",
-    "RET505",
-    "RET506",
-    "RET507",
-    "RET508",
-    "TRY003",
-    "TRY300",
+    "E501", # Line too long (handled by formatter)
+    "B008", # Do not perform function calls in argument defaults
 ]
 typing-modules = ["colour.hints"]
-fixable = ["B", "C", "E", "F", "PIE", "RUF", "SIM", "UP", "W"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.isort]
+known-first-party = ["ole"]
+split-on-trailing-comma = true
+
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.ruff.per-file-ignores]
-"colour/examples/*" = ["INP", "T201", "T203"]
-"docs/*" = ["INP"]
-"tasks.py" = ["INP"]
-"utilities/*" = ["EXE001", "INP"]
-"utilities/unicode_to_ascii.py" = ["RUF001"]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG", "T20"]
+"tasks.py" = ["T20"]
+"ole/scripts/*" = ["T201"]
+"ole/ETC/fonts/__init__.py" = ["F403"]
+"*.ipynb" = ["E402"]
 
 [tool.ruff.format]
 docstring-code-format = true

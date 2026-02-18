@@ -2,11 +2,15 @@
 Implements control of external test pattern generators.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import requests
-from numpy.typing import ArrayLike
 
 from ole.utilities import get_logger
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
 
 TPG_LOG = get_logger(__name__)
 

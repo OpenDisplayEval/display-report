@@ -175,9 +175,12 @@ def main():
 
     parser.add_argument(
         "--measurement-speed",
-        choices=[*zip(*[v.values for v in cr.MeasurementSpeed.__members__.values()])][
-            2
-        ],
+        choices=[
+            *zip(
+                *[v.values for v in cr.MeasurementSpeed.__members__.values()],
+                strict=False,
+            )
+        ][2],
         help='The number of random test colors to include. Default="Normal"',
         default="normal",
     )
@@ -257,7 +260,7 @@ def main():
                 measurements=np.asarray(measurements),
             )
         )
-        print(data_analysis)  # noqa: T201
+        print(data_analysis)
     except Exception as e:
         save_measurements(
             str(save_path.resolve()),

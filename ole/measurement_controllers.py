@@ -5,21 +5,24 @@ Implements automated control of
 import contextlib
 import datetime
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Callable, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from numpy.typing import ArrayLike
-from specio.measurement import Measurement
-from specio.spectrometers import SpecRadiometer
 
-from ole.test_colors import (
-    TestColors,
-)
-from ole.tpg_controller import TPGController
 from ole.utilities import datetime_now
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+    from specio.measurement import Measurement
+    from specio.spectrometers import SpecRadiometer
+
+    from ole.test_colors import (
+        TestColors,
+    )
+    from ole.tpg_controller import TPGController
 
 
 @dataclass
@@ -207,7 +210,7 @@ class DisplayMeasureController:
         """
         if duration is None:
             duration = self.random_colors_duration
-        duration = cast(float, duration)
+        duration = cast("float", duration)
 
         now_f = datetime_now
         t = now_f()
@@ -219,7 +222,7 @@ class DisplayMeasureController:
     class MeasurementError(Exception):
         """Raised if a measurement fails after multiple attempts"""
 
-    def _get_measurement(self, test_color: ArrayLike, n=10) -> Measurement:
+    def _get_measurement(self, test_color: ArrayLike, n: int = 10) -> Measurement:
         """Trigger a robust measurement of a specific test color from the
         spectrometer.
 
@@ -251,7 +254,7 @@ class DisplayMeasureController:
                 time.sleep(2 / 24)  # One "slow" frame
 
                 measurement = self.cr.measure()
-            except Exception:  # noqa: S112
+            except Exception:
                 continue  # There was some failure, continue and try again.
             break
         if measurement is None:
