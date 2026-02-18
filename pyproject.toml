@@ -1,53 +1,58 @@
-[tool.poetry]
+[project]
 name = "ole-tools"
 version = "0.1.0"
 description = ""
-authors = ["Unknown"]
-packages = [{ include = "ole" }]
+authors = [{ name = "Unknown" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "requests>=2.31.0,<3",
+    "colour-science",
+    "colour-datasets",
+    "colour-specio",
+    "numpy>=1.25.0,<2",
+    "scipy>=1.10.1,<2",
+    "xxhash>=3.2.0,<4",
+    "matplotlib>=3.7.1,<4",
+    "scikit-learn>=1.2.2,<2",
+    "pandas>=2.2.0,<3",
+    "opencv-python>=4.8.1.78,<5",
+    "pymoo>=0.6.1.1,<0.7",
+    "telnetlib3>=2.0.4,<3",
+    "exscript>=2.6.28,<3",
+]
 
-[tool.poetry.scripts]
-ole_measure = 'ole.scripts.measure_display:main'
-ole_analyze = 'ole.scripts.analyze_display_measurements:main'
-ole_anonymize = 'ole.scripts.strip_metadata:main'
+[project.scripts]
+ole_measure = "ole.scripts.measure_display:main"
+ole_analyze = "ole.scripts.analyze_display_measurements:main"
+ole_anonymize = "ole.scripts.strip_metadata:main"
 
-[tool.poetry.dependencies]
-requests = "^2.31.0"
-python = "~3.12"
-colour-science = "*"
-colour-datasets = "*"
-colour-specio = "*"
-numpy = "^1.25.0"
-scipy = "^1.10.1"
-xxhash = "^3.2.0"
-matplotlib = "^3.7.1"
-scikit-learn = "^1.2.2"
-pandas = "^2.2.0"
-opencv-python = "^4.8.1.78"
-pymoo = "^0.6.1.1"
-telnetlib3 = "^2.0.4"
-exscript = "^2.6.28"
+[dependency-groups]
+dev = [
+    "jupyter>=1.0.0,<2",
+    "black>=23.3.0,<24",
+    "pytest>=7.4.0,<8",
+    "pytest-xdist>=3.3.1,<4",
+    "pyright>=1.1.332",
+    "ruff>=0.1.0",
+    "flynt>=1.0.1,<2",
+    "isort>=5.12.0,<6",
+    "ipykernel>=6.29.0,<7",
+    "networkx>=2.7,<3",
+    "opencolorio>=2,<3",
+    "tqdm>=4,<5",
+]
 
-[tool.poetry.dev-dependencies]
-jupyter = "^1.0.0"
-black = "^23.3.0"
-pytest = "^7.4.0"
-pytest-xdist = "^3.3.1"
-pyright = "^1.1.332"
-ruff = "^0.1.0"
-flynt = "^1.0.1"
-isort = "^5.12.0"
-ipykernel = "^6.29.0"
-networkx = ">= 2.7, < 3"
-opencolorio = ">= 2, < 3"
-tqdm = ">= 4, < 5"
-
-colour-science = { path = "colour-science", develop = true }
-colour-datasets = { path = "colour-datasets", develop = true }
-colour-specio = { path = "colour-specio", develop = true }
+[tool.uv.sources]
+colour-science = { path = "colour-science", editable = true }
+colour-datasets = { path = "colour-datasets", editable = true }
+colour-specio = { path = "colour-specio", editable = true }
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ole"]
 
 [tool.codespell]
 ignore-words-list = 'co-ordinates,exitance,hart,ist'

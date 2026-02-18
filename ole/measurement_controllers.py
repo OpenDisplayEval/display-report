@@ -111,6 +111,7 @@ class DisplayMeasureController:
         color_list: TestColors,
         random_colors_duration: float | None = None,
         progress_callbacks: Iterable[ProgressCallback] = set(),
+        max_color_value: int = 1023,
     ) -> None:
         """Construct a new DisplayMeasurementController for coordinating the
         measurement of a list of test colors via a TPG object and a
@@ -131,6 +132,10 @@ class DisplayMeasureController:
             to the TPGController, by default None
         progress_callbacks : Iterable[ProgressCallback], optional
             A set of call backs to issue `ProgressUpdate`s to, by default set()
+        max_color_value : int, optional
+            The maximum integer color value for the device's bit depth
+            (e.g. 255 for 8-bit, 1023 for 10-bit, 4095 for 12-bit).
+            Used for scaling random colors. By default 1023.
         """
         self._progress_callbacks = set()
         for f in progress_callbacks:
@@ -139,6 +144,7 @@ class DisplayMeasureController:
         self.tpg = tpg
         self.cr = cr
         self.color_list = color_list
+        self.max_color_value = max_color_value
 
         self.random_colors_duration = (
             random_colors_duration if random_colors_duration is not None else 5
@@ -207,7 +213,7 @@ class DisplayMeasureController:
         t = now_f()
         while now_f() - t < datetime.timedelta(seconds=duration):
             c = self._rng.random(size=(3))
-            self.tpg.send_color(c * 1023)
+            self.tpg.send_color(c * self.max_color_value)
             time.sleep(3 / 24)  # ~12 FPS Maximum
 
     class MeasurementError(Exception):

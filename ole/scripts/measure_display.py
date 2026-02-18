@@ -52,9 +52,17 @@ def main():
 
     parser.add_argument(
         "--tpg-ip",
-        help="The IP address of the computer running the ETC Test Pattern Generator API",
+        help="The IP address of the computer running the bmd-signal-gen server",
         required=True,
         type=str,
+    )
+
+    parser.add_argument(
+        "--tpg-port",
+        default=4844,
+        help="The port of the bmd-signal-gen server. Default=4844",
+        required=False,
+        type=int,
     )
 
     parser.add_argument(
@@ -216,10 +224,7 @@ def main():
         max_nits=args.max_nits,
     )
     test_colors = generate_colors(tcc)
-    test_colors.colors = (test_colors.colors * (1023 / tcc.quantized_range)).astype(
-        np.int16
-    )
-    tpg = TPGController(args.tpg_ip)
+    tpg = TPGController(args.tpg_ip, port=args.tpg_port)
 
     if args.use_virtual == -1:
         meter = VirtualSpectrometer()
@@ -232,6 +237,7 @@ def main():
         cr=meter,
         color_list=test_colors,
         progress_callbacks=[ProgressPrinter()],
+        max_color_value=tcc.quantized_range,
     )
     dmc.random_colors_duration = args.stabilization_time
 
