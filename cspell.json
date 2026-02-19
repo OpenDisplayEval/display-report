@@ -49,12 +49,14 @@
     "nbconvert",
     "nbformat",
     "OLED",
+    "Planckian",
     "playback",
     "pygments",
     "pyproject",
     "pytest",
     "RGBLE",
-    "RGBXLE"
+    "RGBXLE",
+    "SDCM"
   ],
   "ignorePaths": [
     ".venv",

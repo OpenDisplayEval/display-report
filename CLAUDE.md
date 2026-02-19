@@ -2,14 +2,15 @@
 
 ## Project overview
 
-OLE-Toolset (OpenLEDEval Toolset) is a display measurement and analysis toolkit for
-LED/OLED display evaluation. It provides command-line tools for driving test pattern
-generators, capturing spectroradiometer measurements, and analyzing the resulting data
-to produce reports.
+OLE-Toolset (OpenLEDEval Toolset) is a display measurement and analysis toolkit
+for LED/OLED display evaluation. It provides command-line tools for driving test
+pattern generators, capturing spectroradiometer measurements, and analyzing the
+resulting data to produce reports.
 
 ## Common commands
 
-All commands must be run through `uv run` to use the project's virtual environment:
+All commands must be run through `uv run` to use the project's virtual
+environment:
 
 ```bash
 uv run invoke check          # Run all quality checks (lint, format --check, typecheck, spellcheck)
@@ -24,20 +25,43 @@ uv run invoke clean           # Remove __pycache__, .pytest_cache, .ruff_cache
 
 ## Development guidelines
 
-- **DRY**: Do not repeat yourself. Reuse existing utilities from `ole.utilities`.
-- **Docstrings**: Use NumPy-style docstrings for all public functions and classes.
+- **DRY**: Do not repeat yourself. Reuse existing utilities from
+  `ole.utilities`.
+- **Docstrings**: Use NumPy-style docstrings for all public functions and
+  classes.
 - **Type hints**: All function signatures must have type annotations.
-- **Always use `uv run`**: Never invoke tools directly; always prefix with `uv run`.
+- **Always use `uv run`**: Never invoke tools directly; always prefix with
+  `uv run`.
 - **Formatting**: ruff handles both linting and formatting (line length 88).
-- **Imports**: ruff handles import sorting; `ole` is a known first-party package.
+- **Imports**: ruff handles import sorting; `ole` is a known first-party
+  package.
+
+## Documentation style
+
+Based on Google Developer Documentation, Microsoft Writing Style Guide, and
+Diataxis (docs.divio.com).
+
+- **Active voice, present tense.** Make the actor and the action clear.
+- **Front-load what matters.** Put the key information first; conditions before
+  instructions.
+- **Short sentences, short paragraphs.** Prune every word that does not serve
+  the reader.
+- **Precise over impressive.** Use technical terms when they are the clearest
+  option; never use jargon to sound authoritative.
+- **Neutral, task-focused tone.** No marketing language, superlatives, or
+  emotional appeals. Inform, don't sell.
+- **Progressive disclosure.** Separate explanation, how-to, and reference so
+  readers find what they need without wading through the rest.
+- **State the audience.** Never explain what the reader already knows; never
+  assume knowledge you haven't established.
 
 ## Entry points
 
-| Command | Module | Description |
-|---------|--------|-------------|
-| `ole_measure` | `ole.scripts.measure_display:main` | Drive TPG + spectroradiometer for measurements |
-| `ole_analyze` | `ole.scripts.analyze_display_measurements:main` | Analyze measurement data and generate reports |
-| `ole_anonymize` | `ole.scripts.strip_metadata:main` | Strip identifying metadata from measurement files |
+| Command         | Module                                          | Description                                       |
+| --------------- | ----------------------------------------------- | ------------------------------------------------- |
+| `ole_measure`   | `ole.scripts.measure_display:main`              | Drive TPG + spectroradiometer for measurements    |
+| `ole_analyze`   | `ole.scripts.analyze_display_measurements:main` | Analyze measurement data and generate reports     |
+| `ole_anonymize` | `ole.scripts.strip_metadata:main`               | Strip identifying metadata from measurement files |
 
 ## Package structure
 
@@ -59,6 +83,7 @@ uv run invoke clean           # Remove __pycache__, .pytest_cache, .ruff_cache
 
 After making changes:
 
-1. Run `uv run invoke ai-developer-quality` to format, lint-fix, typecheck, and spellcheck.
+1. Run `uv run invoke ai-developer-quality` to format, lint-fix, typecheck, and
+   spellcheck.
 2. Re-read any files you modified (they may have been auto-formatted).
 3. Run `uv run invoke test` to verify nothing is broken.

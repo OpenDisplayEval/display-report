@@ -1,189 +1,129 @@
 # OLE-Toolset (OpenLEDEval Toolset)
 
-A display measurement and analysis toolkit for LED/OLED display evaluation.
-OLE-Toolset drives test pattern generators and spectroradiometers to capture
-colorimetric measurements, then analyzes the results to produce precision
-reports with metrics like dE2000, dE ITP, and primary matrix estimation.
+OLE-Toolset measures LED and OLED displays and produces a standardized,
+open-source fidelity report. It sends hundreds of known code values to a
+display, captures the resulting light output with a spectroradiometer, and
+compares the two to quantify reproduction accuracy.
 
-## Hardware Setup
+## Why open-source measurement reports?
 
-OLE-Toolset requires two pieces of measurement hardware connected to the
-display under test:
+Traditional display spec sheets describe _capability_ — peak brightness, gamut
+coverage contrast ratio. They do not show whether a display tracks its target
+EOTF, holds a neutral grey scale, or reproduces colours accurately inside the
+gamut boundary. The numbers are best-case snapshots, not distributions, and they
+are not independently verifiable.
 
-1. **Blackmagic DeckLink card** — outputs precise test patterns directly to
-   the display, bypassing OS/GPU colour management for deterministic signal
-   output. Driven in-process via the
-   [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen) library.
+OLE-Toolset's report format is open source. The metrics it presents, the
+visualizations it uses, the tolerance thresholds it applies, and the way it
+surfaces information to non-specialist readers are all visible in the codebase.
+Anyone can review those design choices, propose improvements, or adapt the
+format for their own context.
 
-2. **Spectroradiometer** (Colorimetry Research CR-300 or CR-250) — measures
-   the display's actual light output for each test patch. Connected via USB
-   and auto-discovered by the measurement script.
+The report summarizes accuracy as distributions (mean + 95th percentile), not
+cherry-picked values. Results are comparable across vendors and display
+technologies because the report format and analysis are identical for every
+display measured.
 
-```
-┌──────────┐    DeckLink     ┌─────────────┐    Spectroradiometer
-│ Host PC  │───(SDI/HDMI)───▶│ Display     │◀───────(USB)──────── CR-300
-│ ole_     │                 │ Under Test  │
-│ measure  │                 └─────────────┘
-└──────────┘
-```
+## Reading the report
 
-## Workflow
+The report is a single-page PDF. Each section uses a traffic-light tolerance
+scheme: green indicates performance within one JND (just noticeable difference),
+yellow indicates marginal performance, and red indicates clearly visible error.
 
-### 1. Configure Display Settings
+### Summary statistics
 
-Set the display to PQ / native gamut mode. Determine the target bit depth,
-maximum luminance in cd/m² (nits), and HDR parameters for the measurement session.
+The top of the report shows aggregate colour difference metrics:
 
-### 2. Measure — `ole_measure`
+- **Mean dE 2000** and **95th percentile** — perceptual colour difference
+  weighted for typical viewing conditions. Good for judging how a human observer
+  would perceive the display.
+- **Mean dE ITP** and **95th percentile** — perceptual colour difference in
+  ICtCp space (ITU BT.2124). More sensitive than dE 2000, especially at low
+  luminance. Good for understanding physical error across the full dynamic
+  range.
+- **Reflectance** and **glossiness ratio** (if supplied) — 45:0 and 45:45
+  reflectance factors that determine real-world black level and contrast ratio
+  under ambient light.
 
-Drives the DeckLink device through a set of test patches (grey ramps, colour
-cubes, blacks, whites, random colours) while the spectroradiometer captures
-XYZ tristimulus measurements for each patch. Produces a `.csmf` (Colour
-Science Measurement File) containing the raw measurement data.
+### Chromaticity error (CIE u'v')
 
-```bash
-uv run ole_measure \
-    --max-luminance 1500 \
-    --bit-depth 10 \
-    --warmup 10 \
-    --save-directory ./measurements \
-    --device-name "Display A — Panel 3"
-```
+Shows the measured colour error plotted on the CIE 1976 u'v' chromaticity
+diagram alongside MacAdam ellipses. The diagram clusters all test patches into
+14 regions and draws an arrow from each cluster centre showing the mean error
+direction and magnitude, magnified 10x (same scale as the ellipses). If an arrow
+is roughly the same size as the nearby ellipse, the error in that region is
+approximately 1 standard deviation of colour matching (SDCM).
 
-### 3. Analyze — `ole_analyze`
+Three gamut outlines are overlaid for reference: P3-D65 (red dashed), BT.2020
+(green dashed), and the tile's estimated native gamut (black solid).
 
-Processes a `.csmf` measurement file and generates a PDF report with:
+### PQ EOTF performance
 
-- dE2000 and dE ITP colour difference metrics
-- Primary matrix estimation
-- Grey scale linearity analysis
-- Colour cube accuracy
+Plots the ideal PQ transfer function (red curve) against measured grey-ramp
+luminance values (blue dots) on log-log axes. The x-axis shows 10-bit code
+values; the y-axis shows luminance in nits. Two reference lines mark 1000 nits
+(teal) and the tile's measured maximum luminance (purple). A display tracking PQ
+correctly will have its dots fall directly on the red curve up to the tile
+maximum, then clip above it.
 
-```bash
-uv run ole_analyze path/to/measurements.csmf
-```
+### White point stability
 
-### 4. Anonymize — `ole_anonymize`
+Two vertically stacked subplots show how the display's white point drifts across
+luminance levels:
 
-Strips identifying metadata (device names, timestamps, notes) from measurement
-files for sharing or publication.
+- **CCT** (top) — correlated colour temperature in Kelvin. The target is D65
+  (6504 K). Drift above the line means cooler/bluer; below means
+  warmer/yellower.
+- **Duv** (bottom) — green/magenta offset from the Planckian locus (CIE 1960).
+  Positive values shift green; negative values shift magenta.
 
-```bash
-uv run ole_anonymize path/to/measurements.csmf
-```
+Both subplots use tolerance bands derived from ANSI C78.377 SDCM values: green
+is within 1 SDCM of D65, yellow within 4 SDCM, and red beyond 6 SDCM.
 
-## Installation
+### Brightness error (dI)
 
-### Prerequisites
+Plots per-patch brightness error derived from the intensity channel of ICtCp.
+Positive values mean the display is brighter than expected; negative values mean
+darker. Each dot is coloured by its test patch RGB value, making it easy to spot
+whether specific colours or luminance ranges are affected.
 
-- **Python >=3.12, <3.15**
-- **[uv](https://docs.astral.sh/uv/)** — Python package manager
-- **Blackmagic DeckLink drivers** — required for test pattern generation
-  (install from [Blackmagic Design support](https://www.blackmagicdesign.com/support))
-- **DeckLink C library** (`libdecklink`) — bundled with the DeckLink drivers
+Tolerance bands: green for less than 1 JND, yellow for 1-8 JND, red for greater
+than 8 JND. The y-axis uses a symmetric log scale.
 
-### Setup
+### Chromatic error
+
+Plots the combined hue and saturation error from ICtCp, with brightness removed.
+This isolates colour reproduction error from brightness error. Only the
+magnitude is shown (no sign), so all values are zero or positive.
+
+Same tolerance scheme as brightness error: green below 1 JND, yellow 1-8, red
+above 8. Dots are coloured by test patch RGB value.
+
+### Tolerance reference
+
+| Band   | Threshold | Meaning                                        |
+| ------ | --------- | ---------------------------------------------- |
+| Green  | < 1 JND   | Not perceptible under normal viewing           |
+| Yellow | 1 - 8 JND | Marginal — may be visible in demanding content |
+| Red    | > 8 JND   | Clearly visible distortion                     |
+
+A JND (just noticeable difference) is the smallest colour or brightness change a
+typical observer can detect under controlled conditions. In practice, moving or
+complex imagery raises the detection threshold, so yellow-zone errors are often
+acceptable.
+
+## Quick start
 
 ```bash
 git clone https://github.com/OpenLEDEval/OLE-Toolset.git
 cd OLE-Toolset
-
-# Install dependencies (colour-science, colour-datasets, colour-specio from PyPI)
 uv sync
-
-# Verify installation
-uv run ole_measure --help
+uv run ole_measure --max-nits 1500 --bit-depth 10 --save-directory ./measurements
+uv run ole_analyze ./measurements/<file>.csmf
 ```
 
-## CLI Reference
-
-### `ole_measure`
-
-Drive DeckLink + spectroradiometer for automated display measurements.
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--device-index` | `0` | DeckLink device index |
-| `--bit-depth` | auto | Bit depth for test colours (auto-detected from device) |
-| `--max-luminance` | `1500` | Display maximum luminance in cd/m² (nits) |
-| `--min-above-black` | `0.1` | Minimum measurable PQ value |
-| `--warmup` | `10` | Warmup time in minutes (random colour stabilization) |
-| `--stabilization-time` | `5` | Seconds of random colours between patches |
-| `--grey-n` | `25` | Grey ramp sample count |
-| `--cube-n` | `8` | Colour cube samples per axis (total = n^3) |
-| `--black-n` | `20` | Black patch repeat count |
-| `--white-n` | `5` | White patch repeat count |
-| `--random` | `100` | Random test colour count |
-| `--measurement-speed` | `normal` | Spectrometer speed setting |
-| `--use-virtual` | — | Use virtual spectrometer (for debugging) |
-| `--save-directory` | `./` | Output directory |
-| `--save-file` | auto | Output filename (default: timestamped) |
-| `--device-name` | auto | Metadata label embedded in output file |
-
-### `ole_analyze`
-
-Analyze measurement data and generate PDF reports.
-
-```bash
-uv run ole_analyze <measurement_file.csmf> [options]
-```
-
-### `ole_anonymize`
-
-Strip identifying metadata from measurement files.
-
-```bash
-uv run ole_anonymize <measurement_file.csmf>
-```
-
-## Project Structure
-
-```
-OLE-Toolset/
-├── ole/                          # Main package
-│   ├── scripts/                  # CLI entry points
-│   │   ├── measure_display.py    #   ole_measure
-│   │   ├── analyze_display_measurements.py  #   ole_analyze
-│   │   └── strip_metadata.py     #   ole_anonymize
-│   ├── ETC/                      # Analysis and PDF report generation
-│   ├── tpg_controller.py         # DeckLink test pattern generator control
-│   ├── measurement_controllers.py # Spectroradiometer measurement coordination
-│   ├── test_colors.py            # Test colour set generation (PQ ramps, cubes)
-│   └── utilities.py              # Shared helper functions
-├── tests/                        # Test suite
-├── pyproject.toml                # Project config and dependencies
-└── tasks.py                      # Invoke task definitions
-```
-
-## Development
-
-All commands are run through `uv run` to use the project's virtual
-environment:
-
-```bash
-# Full development workflow (format, lint, typecheck, spellcheck, test)
-uv run invoke dev
-
-# Quality checks only (no tests)
-uv run invoke check
-
-# Auto-fix lint and format issues
-uv run invoke check-fix
-
-# Individual checks
-uv run invoke typecheck       # Pyright type checking
-uv run invoke spellcheck      # cspell spell checking
-uv run invoke test            # pytest suite
-```
-
-### Guidelines
-
-- **Type hints** on all function signatures
-- **NumPy-style docstrings** for public functions and classes
-- **ruff** for linting and formatting (line length 88)
-- **DRY** — reuse utilities from `ole.utilities`
-- Use specific exception types; avoid bare `except`
-- Let unexpected errors propagate
+See [USAGE.md](USAGE.md) for hardware setup, full CLI reference, and development
+instructions.
 
 ## License
 
