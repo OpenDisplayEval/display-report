@@ -1,8 +1,8 @@
-"""PDF generation for Entertainment Technology Center LED Eval Report
-"""
+"""PDF generation for Entertainment Technology Center LED Eval Report"""
 
 import importlib
 import importlib.resources
+from typing import TYPE_CHECKING
 
 import matplotlib
 import matplotlib.font_manager
@@ -18,17 +18,23 @@ from colour.plotting.models import (
 from colour.temperature.ohno2013 import XYZ_to_CCT_Ohno2013
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from matplotlib.gridspec import SubplotSpec
 from matplotlib.patches import Polygon
 from sklearn.cluster import KMeans
 
-from ole.ETC.analysis import (
-    ColourPrecisionAnalysis,
-    ReflectanceData,
-)
 from ole.ETC.fonts import Anuphan
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+    from matplotlib.gridspec import SubplotSpec
+    from matplotlib.image import AxesImage
+
+    from ole.ETC.analysis import (
+        ColourPrecisionAnalysis,
+        ReflectanceData,
+    )
 
 
 def plot_chromaticity_error(data: ColourPrecisionAnalysis, ax: Axes | None = None):
@@ -65,7 +71,7 @@ def plot_chromaticity_error(data: ColourPrecisionAnalysis, ax: Axes | None = Non
     ax.set_yticks(np.arange(-0.1, 0.7, 0.1), [])
 
     for p in ax.patches[1:]:
-        p.set_color((0, 0.6, 0.5))  # type: ignore
+        p.set_color((0, 0.6, 0.5))
         p.set_alpha(0.4)
         p.set_zorder(5)
 
@@ -104,11 +110,11 @@ def plot_chromaticity_error(data: ColourPrecisionAnalysis, ax: Axes | None = Non
     Luv_to_uv(XYZ_to_Luv(data.primary_matrix.T))
 
     klusters = KMeans(n_clusters=14, n_init=20).fit(data.measured_colors["uvp"])
-    normalize = matplotlib.colors.Normalize(0, 13)  # type: ignore
-    colors = matplotlib.cm.nipy_spectral(normalize(klusters.labels_))  # type: ignore
+    normalize = matplotlib.colors.Normalize(0, 13)
+    colors = matplotlib.cm.nipy_spectral(normalize(klusters.labels_))
     dist = data.measured_colors["uvp"] - data.expected_colors["uvp"]
 
-    for idx in range(klusters.n_clusters):  # type: ignore
+    for idx in range(klusters.n_clusters):
         kmask = klusters.labels_ == idx
         kdist = np.mean(dist[kmask], axis=0) * 10
         ax.arrow(
@@ -249,7 +255,7 @@ def plot_wp_accuracy(
         axs = [fig.add_subplot(temp_spec[0]), fig.add_subplot(temp_spec[1])]
 
     xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5)) * 1023
-    xtick_labels = ["0.1"] + [f"{(10.0 ** m):.0f}" for m in np.arange(0, 5)]
+    xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
     xtick_minor = (
         pq.eotf_inverse_ST2084(
             (
@@ -274,9 +280,9 @@ def plot_wp_accuracy(
     ) / 7
     duv_tolerance = 0.0060 / 7
 
-    cct_list = np.array(list(zip(*data.grey["avg_scale"]))[2])
+    cct_list = np.array(list(zip(*data.grey["avg_scale"], strict=False))[2])
 
-    def plot_max_nits_line(ax):
+    def plot_max_nits_line(ax: Axes) -> tuple[float, float]:
         max_nits = np.max([m[0][1] for m in data.grey["avg_scale"]])
         x_max_nits = pq.eotf_inverse_ST2084(max_nits) * 1023
 
@@ -289,7 +295,7 @@ def plot_wp_accuracy(
         ax.plot([x_max_nits, x_max_nits], ax.get_ylim(), color="#6f5481")
         return (max_nits, x_max_nits)
 
-    def plot_wp_cct(ax):
+    def plot_wp_cct(ax: Axes) -> None:
         y_lim = (5500, 7500)
         ax.set_ylim(*y_lim)
 
@@ -313,7 +319,7 @@ def plot_wp_accuracy(
                 y_lim[1],
             ],
             colors="rryggyrr",
-            aspect_multiplier=0.5,  # type: ignore
+            aspect_multiplier=0.5,
         )
 
         ax.scatter(data.grey["uniques"][0], cct_list[:, 0])
@@ -339,7 +345,7 @@ def plot_wp_accuracy(
 
     plot_wp_cct(axs[0])
 
-    def plot_wp_duv(ax):
+    def plot_wp_duv(ax: Axes) -> None:
         y_lim = np.array((-0.012, 0.012)) + 0.003
         ax.set_ylim(*y_lim)
         ax.set_yticks(
@@ -370,7 +376,7 @@ def plot_wp_accuracy(
                 y_lim[1],
             ],
             colors="rryggyrr",
-            aspect_multiplier=0.5,  # type: ignore
+            aspect_multiplier=0.5,
         )
         # fmt: off
         mask = (
@@ -437,7 +443,7 @@ def plot_brightness_errors(
     ax.scatter(
         data.measured_colors["ICtCp"][:, 0],
         deltaI,
-        c=data.test_colors[:] / 1023,  # type: ignore
+        c=data.test_colors[:] / 1023,
         s=50,
     )
     ax.set_yscale("symlog", base=2)
@@ -446,7 +452,7 @@ def plot_brightness_errors(
     ax.set_xlim(pq.eotf_inverse_ST2084(0.1), 1)  # type: ignore
 
     xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5))
-    xtick_labels = ["0.1"] + [f"{(10.0 ** m):.0f}" for m in np.arange(0, 5)]
+    xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
     xticks_minor = pq.eotf_inverse_ST2084(
         (
             np.arange(2, 10).reshape(1, -1) * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
@@ -480,7 +486,12 @@ def plot_brightness_errors(
     return ax
 
 
-def _plot_y_tolerance_bg(ax, tol_bounds, colors, aspect_multiplier=1):
+def _plot_y_tolerance_bg(
+    ax: Axes,
+    tol_bounds: list[float],
+    colors: Sequence[str],
+    aspect_multiplier: float = 1,
+) -> AxesImage:
     """Create a y axis background gradient based on the stops and colors in
     `tol_bounds` and `colors`
     """
@@ -536,7 +547,7 @@ def plot_chromatic_error(data: ColourPrecisionAnalysis, ax: Axes | None = None) 
     ax.scatter(
         data.measured_colors["ICtCp"][:, 0],
         delta_cr,
-        c=data.test_colors / 1023,  # type: ignore
+        c=data.test_colors / 1023,
         s=50,
     )
     ax.set_yscale("symlog", base=2)
@@ -545,7 +556,7 @@ def plot_chromatic_error(data: ColourPrecisionAnalysis, ax: Axes | None = None) 
     ax.set_xlim(pq.eotf_inverse_ST2084(0.1), 1)  # type: ignore
 
     xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5))
-    xtick_labels = ["0.1"] + [f"{(10.0 ** m):.0f}" for m in np.arange(0, 5)]
+    xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
     xticks_minor = pq.eotf_inverse_ST2084(
         (
             np.arange(2, 10).reshape(1, -1) * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
@@ -621,13 +632,13 @@ def plot_error_statistics(
     ax.text(
         0.35,
         0,
-        f"{ np.mean(data.error['dE2000']):.01f}",
+        f"{np.mean(data.error['dE2000']):.01f}",
         **text_settings,  # type: ignore
     )
     ax.text(
         0.5,
         0,
-        f"95th percentile: { np.percentile(data.error['dE2000'], 95):.01f}",
+        f"95th percentile: {np.percentile(data.error['dE2000'], 95):.01f}",
         **text_settings,  # type: ignore
     )
 
@@ -640,13 +651,13 @@ def plot_error_statistics(
     ax.text(
         0.35,
         1,
-        f"{ np.mean(data.error['ICtCp']):.01f}",
+        f"{np.mean(data.error['ICtCp']):.01f}",
         **text_settings,  # type: ignore
     )
     ax.text(
         0.5,
         1,
-        f"95th percentile:  { np.percentile(data.error['ICtCp'], 95):.01f}",
+        f"95th percentile:  {np.percentile(data.error['ICtCp'], 95):.01f}",
         **text_settings,  # type: ignore
     )
 
@@ -713,7 +724,7 @@ def generate_report_page(
 
     fig = plt.figure(
         "ETC LED Report",
-        figsize=np.asarray((8.5, 11)),  # type: ignore
+        figsize=np.asarray((8.5, 11)),
         facecolor=(1, 1, 1),
         constrained_layout=True,
         dpi=100,

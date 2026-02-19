@@ -8,7 +8,7 @@ from colour.utilities.verbose import suppress_warnings
 def main():
     """
     The entry point for measurement analysis and PDF generation.
-    """  # noqa: D401
+    """
     import argparse
     from pathlib import Path
 
@@ -99,11 +99,11 @@ def main():
 
     fig.savefig(str(out_file_name), facecolor=[1, 1, 1])
 
-    print(f"Analysis saved to: {out_file_name!s}")  # noqa: T201
+    print(f"Analysis saved to: {out_file_name!s}")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    print("Ignoring colour warnings")  # noqa: T201
+    print("Ignoring colour warnings")
     with suppress_warnings(colour_warnings=True, python_warnings=True):
         main()

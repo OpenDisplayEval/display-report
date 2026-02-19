@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.17.3
+    hooks:
+      - id: cspell
+        args: [--no-progress]
+        files: \.(py|md)$
+        exclude: ^(colour-science|colour-datasets|colour-specio|\.venv|__pycache__|build|dist)/
+  - repo: local
+    hooks:
+      - id: user-pre-commit-hook
+        name: user pre-commit hook
+        language: system
+        entry: sh -c 'HOOK="${XDG_CONFIG_HOME:-$HOME/.config}/git/hooks/pre-commit"; test -x "$HOOK" && exec "$HOOK" || true'
+        always_run: true
+        pass_filenames: false

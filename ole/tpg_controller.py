@@ -2,20 +2,26 @@
 Implements control of external test pattern generators.
 """
 
-import json
+from typing import TYPE_CHECKING
 
 import numpy as np
 import requests
-from numpy.typing import ArrayLike
 
 from ole.utilities import get_logger
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
 
 TPG_LOG = get_logger(__name__)
 
 
 class TPGController:
-    """A controller class to send display commands to the Unreal Engine based
-    Test Pattern Generator <https://github.com/joshkerekes/ETC_TestPatterns>
+    """A controller class to send display commands to a bmd-signal-gen server.
+
+    bmd-signal-gen outputs test patterns via a Blackmagic DeckLink card,
+    bypassing OS/GPU color management for deterministic signal output.
+
+    See https://github.com/OpenLEDEval/bmd-signal-gen
     """
 
     @property
@@ -29,29 +35,30 @@ class TPGController:
         """
         return self._ip
 
-    def __init__(self, ip: str):
-        """Create a controller object for a TPG server located at the `ip`
+    def __init__(self, ip: str, port: int = 4844):
+        """Create a controller object for a bmd-signal-gen server.
 
         Parameters
         ----------
         ip : str
-            IP address
+            IP address of the bmd-signal-gen server
+        port : int, optional
+            Port number, by default 4844
         """
         self._ip = ip
-        TPG_LOG.info(f"Setting up TPG Controller for {self.ip}")
+        self._port = port
+        self._base_url = f"http://{ip}:{port}"
+        TPG_LOG.info(f"Setting up TPG Controller for {self._base_url}")
 
     def send_color(self, color: tuple[float, float, float] | ArrayLike):
-        """Send a color to the connected test pattern application packaged with
-        colour-workbench. The test color should be scaled for 0-1023, but is
-        passed to the TPG instance without quantization. 12 bit values (i.e.
-        764.25) may be sent. If the TPG is capable of producing 12 bit colors,
-        it will do so. Otherwise the TPG will produce the color in it's
-        configured back buffer bit depth.
+        """Send a color to the bmd-signal-gen server. Color values should be
+        integers in the device's native bit depth (e.g. 0-255 for 8-bit,
+        0-1023 for 10-bit, 0-4095 for 12-bit).
 
         Parameters
         ----------
         color : tuple[float, float, float] | np.ndarray
-            the color to set. Values can be between 0 and 1023
+            The color to set as an RGB 3-vector.
 
         Raises
         ------
@@ -65,24 +72,10 @@ class TPGController:
             raise ValueError("color must be a 3 vector!")
 
         try:
-            url = f"http://{self._ip}:30010/remote/object/call"
+            url = f"{self._base_url}/update_color"
+            payload = {"colors": [[color[0], color[1], color[2]]]}
 
-            payload = json.dumps(
-                {
-                    "objectPath": "/TestPatternGenerator/Levels/L_TestPattern.L_TestPattern:PersistentLevel.BP_RemoteControlManager_C_1",  # noqa: E501
-                    "functionName": "Update PPVColor",
-                    "parameters": {
-                        "InColor": {
-                            "R": color[0],
-                            "G": color[1],
-                            "B": color[2],
-                        }
-                    },
-                },
-            )
-            headers = {"Content-Type": "application/json"}
-
-            requests.request("PUT", url, headers=headers, data=payload)
+            requests.post(url, json=payload, timeout=5)
             TPG_LOG.debug(
                 f"Sending color: {color[0]:.2f}, {color[1]:.2f}, {color[2]:.2f}"
             )

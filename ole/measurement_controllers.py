@@ -5,21 +5,24 @@ Implements automated control of
 import contextlib
 import datetime
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Callable, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from numpy.typing import ArrayLike
-from specio.measurement import Measurement
-from specio.spectrometers import SpecRadiometer
 
-from ole.test_colors import (
-    TestColors,
-)
-from ole.tpg_controller import TPGController
 from ole.utilities import datetime_now
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+    from specio.measurement import Measurement
+    from specio.spectrometers import SpecRadiometer
+
+    from ole.test_colors import (
+        TestColors,
+    )
+    from ole.tpg_controller import TPGController
 
 
 @dataclass
@@ -111,6 +114,7 @@ class DisplayMeasureController:
         color_list: TestColors,
         random_colors_duration: float | None = None,
         progress_callbacks: Iterable[ProgressCallback] = set(),
+        max_color_value: int = 1023,
     ) -> None:
         """Construct a new DisplayMeasurementController for coordinating the
         measurement of a list of test colors via a TPG object and a
@@ -131,6 +135,10 @@ class DisplayMeasureController:
             to the TPGController, by default None
         progress_callbacks : Iterable[ProgressCallback], optional
             A set of call backs to issue `ProgressUpdate`s to, by default set()
+        max_color_value : int, optional
+            The maximum integer color value for the device's bit depth
+            (e.g. 255 for 8-bit, 1023 for 10-bit, 4095 for 12-bit).
+            Used for scaling random colors. By default 1023.
         """
         self._progress_callbacks = set()
         for f in progress_callbacks:
@@ -139,6 +147,7 @@ class DisplayMeasureController:
         self.tpg = tpg
         self.cr = cr
         self.color_list = color_list
+        self.max_color_value = max_color_value
 
         self.random_colors_duration = (
             random_colors_duration if random_colors_duration is not None else 5
@@ -201,19 +210,19 @@ class DisplayMeasureController:
         """
         if duration is None:
             duration = self.random_colors_duration
-        duration = cast(float, duration)
+        duration = cast("float", duration)
 
         now_f = datetime_now
         t = now_f()
         while now_f() - t < datetime.timedelta(seconds=duration):
             c = self._rng.random(size=(3))
-            self.tpg.send_color(c * 1023)
+            self.tpg.send_color(c * self.max_color_value)
             time.sleep(3 / 24)  # ~12 FPS Maximum
 
     class MeasurementError(Exception):
         """Raised if a measurement fails after multiple attempts"""
 
-    def _get_measurement(self, test_color: ArrayLike, n=10) -> Measurement:
+    def _get_measurement(self, test_color: ArrayLike, n: int = 10) -> Measurement:
         """Trigger a robust measurement of a specific test color from the
         spectrometer.
 
@@ -245,7 +254,7 @@ class DisplayMeasureController:
                 time.sleep(2 / 24)  # One "slow" frame
 
                 measurement = self.cr.measure()
-            except Exception:  # noqa: S112
+            except Exception:
                 continue  # There was some failure, continue and try again.
             break
         if measurement is None:

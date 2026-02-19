@@ -267,3 +267,9 @@ $RECYCLE.BIN/
 
 data/**/*
 !.gitkeep
+
+# Toolchain
+.toolchain/
+
+# Node (for cspell)
+node_modules/

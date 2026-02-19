@@ -13,13 +13,13 @@ from .test_colors import (
 from .tpg_controller import TPGController
 
 __all__ = [
-    "TPGController",
-    "ProgressCallback",
-    "ProgressUpdate",
-    "ProgressPrinter",
     "DisplayMeasureController",
+    "PQ_TestColorsConfig",
+    "ProgressCallback",
+    "ProgressPrinter",
+    "ProgressUpdate",
+    "TPGController",
     "TestColors",
     "TestColorsConfig",
-    "PQ_TestColorsConfig",
     "generate_colors",
 ]
