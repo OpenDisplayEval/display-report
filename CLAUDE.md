@@ -49,17 +49,6 @@ uv run invoke clean           # Remove __pycache__, .pytest_cache, .ruff_cache
   - `tpg_controller.py` — Test pattern generator control
   - `test_colors.py` — Test colour definitions
 
-## Colour-science submodules
-
-This repo includes three Git submodules that have their own independent tooling:
-
-- `colour-science/` — Core colour science library
-- `colour-datasets/` — Colour science datasets
-- `colour-specio/` — Spectral I/O library
-
-Do **not** modify these submodules' configs or run quality tools inside them — they
-maintain their own CI and tooling. Our linter/spellchecker configs exclude them.
-
 ## Error handling
 
 - Use specific exception types; avoid bare `except`.

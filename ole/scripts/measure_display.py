@@ -51,16 +51,9 @@ def main():
     )
 
     parser.add_argument(
-        "--tpg-ip",
-        help="The IP address of the computer running the bmd-signal-gen server",
-        required=True,
-        type=str,
-    )
-
-    parser.add_argument(
-        "--tpg-port",
-        default=4844,
-        help="The port of the bmd-signal-gen server. Default=4844",
+        "--device-index",
+        default=0,
+        help="The DeckLink device index. Default=0",
         required=False,
         type=int,
     )
@@ -109,8 +102,11 @@ def main():
 
     parser.add_argument(
         "--bit-depth",
-        default=10,
-        help=("The bit depth used for the test colors list"),
+        default=None,
+        help=(
+            "The bit depth used for the test colors list. "
+            "When omitted, auto-detected from the DeckLink device's pixel format."
+        ),
         required=False,
         type=int,
     )
@@ -215,42 +211,45 @@ def main():
     )
 
     args = parser.parse_args()
-    tcc = PQ_TestColorsConfig(
-        ramp_samples=args.grey_n,
-        ramp_repeats=1,
-        mesh_size=args.cube_n,
-        blacks=args.black_n,
-        whites=args.white_n,
-        random=args.random,
-        quantized_bits=args.bit_depth,
-        first_light=args.min_above_black,
-        max_luminance=args.max_luminance,
-    )
-    test_colors = generate_colors(tcc)
-    tpg = TPGController(args.tpg_ip, port=args.tpg_port)
 
-    if args.use_virtual == -1:
-        meter = VirtualSpectrometer()
-    else:
-        meter = cr.CRSpectrometer.discover()
-        meter.measurement_speed = cr.MeasurementSpeed(args.measurement_speed)
+    with TPGController(device_index=args.device_index) as tpg:
+        bit_depth = args.bit_depth if args.bit_depth is not None else tpg.bit_depth
 
-    dmc = DisplayMeasureController(
-        tpg=tpg,
-        cr=meter,
-        color_list=test_colors,
-        progress_callbacks=[ProgressPrinter()],
-        max_color_value=tcc.quantized_range,
-    )
-    dmc.random_colors_duration = args.stabilization_time
+        tcc = PQ_TestColorsConfig(
+            ramp_samples=args.grey_n,
+            ramp_repeats=1,
+            mesh_size=args.cube_n,
+            blacks=args.black_n,
+            whites=args.white_n,
+            random=args.random,
+            quantized_bits=bit_depth,
+            first_light=args.min_above_black,
+            max_luminance=args.max_luminance,
+        )
+        test_colors = generate_colors(tcc)
 
-    save_path = Path(args.save_directory, args.save_file)
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    save_path = save_path.with_suffix(".csmf")
+        if args.use_virtual == -1:
+            meter = VirtualSpectrometer()
+        else:
+            meter = cr.CRSpectrometer.discover()
+            meter.measurement_speed = cr.MeasurementSpeed(args.measurement_speed)
 
-    measurements = dmc.run_measurements(warmup_time=args.warmup * 60)
+        dmc = DisplayMeasureController(
+            tpg=tpg,
+            cr=meter,
+            color_list=test_colors,
+            progress_callbacks=[ProgressPrinter()],
+            max_color_value=tcc.quantized_range,
+        )
+        dmc.random_colors_duration = args.stabilization_time
 
-    tpg.send_color((0, 0, 0))
+        save_path = Path(args.save_directory, args.save_file)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path = save_path.with_suffix(".csmf")
+
+        measurements = dmc.run_measurements(warmup_time=args.warmup * 60)
+
+        tpg.send_color((0, 0, 0))
 
     try:
         data_analysis = ColourPrecisionAnalysis(

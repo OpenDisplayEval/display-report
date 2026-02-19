@@ -34,7 +34,27 @@
     "telnetlib",
     "tristimulus",
     "whitepoint",
-    "xxhash"
+    "xxhash",
+    "Blackmagic",
+    "colorimetric",
+    "colours",
+    "csmf",
+    "decklink",
+    "docstrings",
+    "EOTF",
+    "facecolor",
+    "intdigest",
+    "ipython",
+    "libdecklink",
+    "nbconvert",
+    "nbformat",
+    "OLED",
+    "playback",
+    "pygments",
+    "pyproject",
+    "pytest",
+    "RGBLE",
+    "RGBXLE"
   ],
   "ignorePaths": [
     ".venv",
@@ -42,9 +62,6 @@
     "build",
     "dist",
     "node_modules",
-    "colour-science/**",
-    "colour-datasets/**",
-    "colour-specio/**",
     "uv.lock"
   ],
   "ignoreRegExpList": [

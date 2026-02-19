@@ -1,11 +1,17 @@
 """
-Implements control of external test pattern generators.
+Implements control of a Blackmagic DeckLink device for test pattern generation.
+
+Uses the bmd-signal-gen library to drive the DeckLink card directly, bypassing
+OS/GPU colour management for deterministic signal output.
+
+See https://github.com/OpenLEDEval/bmd-signal-gen
 """
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import requests
 
 from ole.utilities import get_logger
 
@@ -14,70 +20,188 @@ if TYPE_CHECKING:
 
 TPG_LOG = get_logger(__name__)
 
+# Preferred pixel formats in descending priority order.
+# 12-bit RGB is preferred over 10-bit RGB for higher precision.
+_PREFERRED_FORMATS = ("FORMAT_12BIT_RGB", "FORMAT_10BIT_RGB")
+
 
 class TPGController:
-    """A controller class to send display commands to a bmd-signal-gen server.
+    """A controller for driving a Blackmagic DeckLink card as a test pattern
+    generator. Wraps ``bmd_sg.BMDDeckLink`` and ``bmd_sg.PatternGenerator``
+    to send solid-colour test patches to a display.
 
-    bmd-signal-gen outputs test patterns via a Blackmagic DeckLink card,
-    bypassing OS/GPU color management for deterministic signal output.
-
-    See https://github.com/OpenLEDEval/bmd-signal-gen
+    The DeckLink C library (``libdecklink``) is loaded lazily on construction
+    so that importing this module succeeds even without DeckLink drivers
+    installed (e.g. in CI or analysis-only environments).
     """
 
     @property
-    def ip(self) -> str:
-        """IP address of the TPG server
+    def bit_depth(self) -> int:
+        """Bit depth of the active pixel format.
 
         Returns
         -------
-        str
-            IP string
+        int
+            Bit depth (e.g. 8, 10, 12).
         """
-        return self._ip
+        return self._pixel_format.bit_depth
 
-    def __init__(self, ip: str, port: int = 4844):
-        """Create a controller object for a bmd-signal-gen server.
+    @property
+    def max_color_value(self) -> int:
+        """Maximum integer colour value for the active pixel format.
+
+        Returns
+        -------
+        int
+            ``2**bit_depth - 1`` (e.g. 1023 for 10-bit, 4095 for 12-bit).
+        """
+        return int(2**self.bit_depth - 1)
+
+    def __init__(
+        self,
+        device_index: int = 0,
+        pixel_format: str | None = None,
+        width: int = 1920,
+        height: int = 1080,
+        hdr_metadata: Any | None = None,
+    ) -> None:
+        """Open a DeckLink device and prepare it for test pattern output.
 
         Parameters
         ----------
-        ip : str
-            IP address of the bmd-signal-gen server
-        port : int, optional
-            Port number, by default 4844
-        """
-        self._ip = ip
-        self._port = port
-        self._base_url = f"http://{ip}:{port}"
-        TPG_LOG.info(f"Setting up TPG Controller for {self._base_url}")
+        device_index : int, optional
+            Index of the DeckLink device to open, by default 0.
+        pixel_format : str | None, optional
+            Pixel format name (e.g. ``"FORMAT_12BIT_RGB"``). When ``None``,
+            the highest-precision supported RGB format is auto-selected.
+        width : int, optional
+            Frame width in pixels, by default 1920.
+        height : int, optional
+            Frame height in pixels, by default 1080.
+        hdr_metadata : HDRMetadata | None, optional
+            HDR metadata to configure on the output. When ``None``, PQ
+            metadata with default luminance values is applied if the device
+            supports HDR.
 
-    def send_color(self, color: tuple[float, float, float] | ArrayLike):
-        """Send a color to the bmd-signal-gen server. Color values should be
+        Raises
+        ------
+        OSError
+            If the DeckLink C library or drivers are not available.
+        RuntimeError
+            If the device cannot be opened or configured.
+        """
+        # Lazy import — avoids OSError at module load when DeckLink drivers
+        # are absent (e.g. CI, analysis-only machines).
+        import bmd_sg
+
+        self._decklink = bmd_sg.BMDDeckLink(device_index=device_index)
+        TPG_LOG.info(f"Opened DeckLink device {device_index}")
+
+        # Select pixel format
+        if pixel_format is not None:
+            self._pixel_format = bmd_sg.PixelFormatType[pixel_format]
+        else:
+            self._pixel_format = self._auto_select_pixel_format(bmd_sg)
+
+        self._decklink.pixel_format = self._pixel_format
+        TPG_LOG.info(
+            f"Pixel format: {self._pixel_format.name} "
+            f"({self._pixel_format.bit_depth}-bit)"
+        )
+
+        # Configure HDR metadata
+        if hdr_metadata is not None:
+            self._decklink.set_hdr_metadata(hdr_metadata)
+        elif self._decklink.supports_hdr:
+            self._decklink.set_hdr_metadata(bmd_sg.HDRMetadata())
+            TPG_LOG.info("Applied default PQ HDR metadata")
+
+        self._decklink.start_playback()
+
+        # Set up the pattern generator for solid-colour patches
+        self._pattern_gen = bmd_sg.PatternGenerator(
+            bit_depth=self._pixel_format.bit_depth,
+            width=width,
+            height=height,
+        )
+        self._width = width
+        self._height = height
+
+    def _auto_select_pixel_format(self, bmd_sg: Any) -> Any:
+        """Choose the highest-precision supported RGB pixel format.
+
+        Parameters
+        ----------
+        bmd_sg : module
+            The bmd_sg module (passed to avoid re-importing).
+
+        Returns
+        -------
+        PixelFormatType
+            The selected pixel format.
+
+        Raises
+        ------
+        RuntimeError
+            If no supported RGB format is found on the device.
+        """
+        supported = self._decklink.get_supported_pixel_formats()
+        supported_names = {fmt.name for fmt in supported}
+
+        for name in _PREFERRED_FORMATS:
+            if name in supported_names:
+                return bmd_sg.PixelFormatType[name]
+
+        # Fall back to first supported format
+        if supported:
+            return supported[0]
+
+        raise RuntimeError(
+            "DeckLink device has no supported pixel formats. "
+            "Check that DeckLink drivers are correctly installed."
+        )
+
+    def send_color(self, color: tuple[float, float, float] | ArrayLike) -> None:
+        """Send a solid colour to the display. Colour values should be
         integers in the device's native bit depth (e.g. 0-255 for 8-bit,
         0-1023 for 10-bit, 0-4095 for 12-bit).
 
         Parameters
         ----------
-        color : tuple[float, float, float] | np.ndarray
-            The color to set as an RGB 3-vector.
+        color : tuple[float, float, float] | ArrayLike
+            The colour to display as an RGB 3-vector.
 
         Raises
         ------
         ValueError
-            if the requested color is not a valid 3-vector
+            If the colour is not a valid 3-vector.
         ConnectionError
-            from any other exceptions
+            If the frame cannot be sent to the device.
         """
         color = np.asarray(color, np.float64)
         if color.shape != (3,):
             raise ValueError("color must be a 3 vector!")
 
         try:
-            url = f"{self._base_url}/update_color"
-            payload = {"colors": [[color[0], color[1], color[2]]]}
-
-            requests.post(url, json=payload, timeout=5)
+            frame = self._pattern_gen.generate(
+                [color.tolist()],
+            )
+            self._decklink.display_frame(frame)
             TPG_LOG.debug(
                 f"Sending color: {color[0]:.2f}, {color[1]:.2f}, {color[2]:.2f}"
             )
         except Exception as e:
             raise ConnectionError("Could not send test color.") from e
+
+    def close(self) -> None:
+        """Stop playback and close the DeckLink device."""
+        if hasattr(self, "_decklink") and self._decklink.is_open:
+            self._decklink.stop_playback()
+            self._decklink.close()
+            TPG_LOG.info("DeckLink device closed")
+
+    def __enter__(self) -> TPGController:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()

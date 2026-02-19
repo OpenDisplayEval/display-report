@@ -5,11 +5,11 @@ description = ""
 authors = [{ name = "Unknown" }]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "requests>=2.31.0,<3",
-    "colour-science",
-    "colour-datasets",
+    "bmd-signal-generator",
+    "colour-science>=0.4.7,<0.5",
+    "colour-datasets>=0.2.7,<0.3",
     "colour-specio",
-    "numpy>=1.25.0,<2",
+    "numpy>=2.3.1,<3",
     "scipy>=1.10.1,<2",
     "xxhash>=3.2.0,<4",
     "matplotlib>=3.7.1,<4",
@@ -42,9 +42,18 @@ dev = [
 ]
 
 [tool.uv.sources]
-colour-science = { path = "colour-science", editable = true }
-colour-datasets = { path = "colour-datasets", editable = true }
-colour-specio = { path = "colour-specio", editable = true }
+bmd-signal-generator = { git = "https://github.com/OpenLEDEval/bmd-signal-gen.git", rev = "76c53490e535b10ef5a959384810780c14e1260e" }
+colour-specio = { git = "https://github.com/colour-science/colour-specio.git", rev = "48f86e8279e4512d7c58d4856027f9cc98e611fc" }
+
+[tool.uv]
+override-dependencies = [
+    # colour-specio caps numpy<2 but doesn't use any removed APIs
+    "numpy>=2.3.1,<3",
+    # colour-specio pins python<3.13 but works fine on 3.14
+    "colour-specio>=0.2.11",
+    # protobuf 4.x doesn't support Python 3.14 metaclass changes
+    "protobuf>=5.29",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -94,11 +103,7 @@ filterwarnings = [
 [tool.ruff]
 target-version = "py314"
 line-length = 88
-exclude = [
-    "colour-science",
-    "colour-datasets",
-    "colour-specio",
-]
+exclude = []
 
 [tool.ruff.lint]
 select = [
