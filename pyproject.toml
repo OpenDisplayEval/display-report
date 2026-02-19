@@ -3,7 +3,7 @@ name = "ole-tools"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Unknown" }]
-requires-python = ">=3.14,<3.15"
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "requests>=2.31.0,<3",
     "colour-science",
