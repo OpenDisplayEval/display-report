@@ -9,8 +9,9 @@ See https://github.com/OpenLEDEval/bmd-signal-gen
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+import bmd_sg
 import numpy as np
 
 from ole.utilities import get_logger
@@ -29,10 +30,6 @@ class TPGController:
     """A controller for driving a Blackmagic DeckLink card as a test pattern
     generator. Wraps ``bmd_sg.BMDDeckLink`` and ``bmd_sg.PatternGenerator``
     to send solid-colour test patches to a display.
-
-    The DeckLink C library (``libdecklink``) is loaded lazily on construction
-    so that importing this module succeeds even without DeckLink drivers
-    installed (e.g. in CI or analysis-only environments).
     """
 
     @property
@@ -63,7 +60,7 @@ class TPGController:
         pixel_format: str | None = None,
         width: int = 1920,
         height: int = 1080,
-        hdr_metadata: Any | None = None,
+        hdr_metadata: bmd_sg.HDRMetadata | None = None,
     ) -> None:
         """Open a DeckLink device and prepare it for test pattern output.
 
@@ -85,15 +82,9 @@ class TPGController:
 
         Raises
         ------
-        OSError
-            If the DeckLink C library or drivers are not available.
         RuntimeError
             If the device cannot be opened or configured.
         """
-        # Lazy import — avoids OSError at module load when DeckLink drivers
-        # are absent (e.g. CI, analysis-only machines).
-        import bmd_sg
-
         self._decklink = bmd_sg.BMDDeckLink(device_index=device_index)
         TPG_LOG.info(f"Opened DeckLink device {device_index}")
 
@@ -101,7 +92,7 @@ class TPGController:
         if pixel_format is not None:
             self._pixel_format = bmd_sg.PixelFormatType[pixel_format]
         else:
-            self._pixel_format = self._auto_select_pixel_format(bmd_sg)
+            self._pixel_format = self._auto_select_pixel_format()
 
         self._decklink.pixel_format = self._pixel_format
         TPG_LOG.info(
@@ -127,13 +118,8 @@ class TPGController:
         self._width = width
         self._height = height
 
-    def _auto_select_pixel_format(self, bmd_sg: Any) -> Any:
+    def _auto_select_pixel_format(self) -> bmd_sg.PixelFormatType:
         """Choose the highest-precision supported RGB pixel format.
-
-        Parameters
-        ----------
-        bmd_sg : module
-            The bmd_sg module (passed to avoid re-importing).
 
         Returns
         -------
