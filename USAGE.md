@@ -2,28 +2,30 @@
 
 ## Hardware Setup
 
-1. **Blackmagic DeckLink card** — sends RGB code values directly to the display
-   over SDI/HDMI, bypassing OS/GPU colour management. Driven in-process via
+1. **Test pattern generator** — sends RGB code values directly to the display
+   over SDI/HDMI, bypassing OS/GPU colour management. Supported devices are
+   determined by
    [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen).
 
-2. **Spectroradiometer** (Colorimetry Research CR-300 or CR-250) — measures the
-   display's light output (spectral power distribution, XYZ tristimulus) for
-   each test patch. Connected via USB, auto-discovered at runtime.
+2. **Spectroradiometer** — measures the display's light output (spectral power
+   distribution, XYZ tristimulus) for each test patch. Connected via USB,
+   auto-discovered at runtime. Supported devices are determined by
+   [colour-specio](https://github.com/colour-science/colour-specio).
 
-```
-          Known code values (RGB)         Measured light output (XYZ)
-               ┌────────┐                      ┌────────┐
-  ┌────────────│DeckLink│──(SDI/HDMI)──▶┌──────│CR-300  │
-  │            └────────┘               │      └────────┘
-  │                                     │          │
-  │  ┌──────────┐               ┌───────┴──────┐  │ (USB)
-  │  │ Host PC  │               │   Display    │  │
-  └──│ ole_     │               │  Under Test  │  │
-     │ measure  │◀──────────────┴──────────────┘──┘
-     └──────────┘
-         │
-         ▼
-   Compare sent vs measured → fidelity report
+```mermaid
+flowchart LR
+    PC[ole_measure]
+    BMD[bmd-signal-gen]
+    TPG[TPG]
+    DUT[Display under test]
+    SR[Spectrometer]
+    CS[colour-specio]
+    Report[Fidelity report]
+
+    PC -- "RGB code values" --> BMD --> TPG -- "SDI / HDMI" --> DUT
+    DUT -. "light output" .-> SR
+    SR --> CS -- "XYZ tristimulus" --> PC
+    PC --> Report
 ```
 
 ## Workflow
@@ -36,7 +38,7 @@ maximum luminance (nits), and HDR parameters for the measurement session.
 ### 2. Measure — `ole_measure`
 
 Sends PQ-encoded test patches (grey ramps, colour cubes, blacks, whites, random
-colours) to the display via the DeckLink card while the spectroradiometer
+colours) to the display via the test pattern generator while the spectroradiometer
 captures XYZ tristimulus values for each patch. Produces a `.csmf` (Colour
 Science Measurement File) containing all stimulus-response pairs.
 
@@ -81,10 +83,9 @@ uv run ole_anonymize path/to/measurements.csmf
 
 - **Python >=3.12, <3.15**
 - **[uv](https://docs.astral.sh/uv/)** — Python package manager
-- **Blackmagic DeckLink drivers** — required for test pattern generation
-  (install from
-  [Blackmagic Design support](https://www.blackmagicdesign.com/support))
-- **DeckLink C library** (`libdecklink`) — bundled with the DeckLink drivers
+- **TPG drivers** — install the drivers for your test pattern generator
+  (see [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen) for
+  supported hardware and setup)
 
 ### Setup
 
@@ -103,11 +104,11 @@ uv run ole_measure --help
 
 ### `ole_measure`
 
-Send test patterns via DeckLink and capture spectroradiometer measurements.
+Send test patterns and capture spectroradiometer measurements.
 
 | Argument               | Default  | Description                                            |
 | ---------------------- | -------- | ------------------------------------------------------ |
-| `--device-index`       | `0`      | DeckLink device index                                  |
+| `--device-index`       | `0`      | TPG device index                                       |
 | `--bit-depth`          | auto     | Bit depth for test colours (auto-detected from device) |
 | `--max-nits`           | `1500`   | Tile maximum luminance in nits                         |
 | `--min-above-black`    | `0.1`    | Minimum measurable PQ value                            |
@@ -151,7 +152,7 @@ OLE-Toolset/
 │   │   ├── analyze_display_measurements.py  #   ole_analyze
 │   │   └── strip_metadata.py     #   ole_anonymize
 │   ├── ETC/                      # Analysis and PDF report generation
-│   ├── tpg_controller.py         # DeckLink test pattern generator control
+│   ├── tpg_controller.py         # Test pattern generator control
 │   ├── measurement_controllers.py # Spectroradiometer measurement coordination
 │   ├── test_colors.py            # Test colour set generation (PQ ramps, cubes)
 │   └── utilities.py              # Shared helper functions
