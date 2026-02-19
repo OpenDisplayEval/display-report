@@ -1,14 +1,23 @@
 # OLE-Toolset (OpenLEDEval Toolset)
 
-OLE-Toolset measures LED and OLED displays and produces a standardized,
-open-source fidelity report. It sends hundreds of known code values to a
-display, captures the resulting light output with a spectroradiometer, and
-compares the two to quantify reproduction accuracy.
+OLE-Toolset measures displays and produces a standardized, open-source fidelity
+report. It sends hundreds of known code values to a display, captures the
+resulting light output with a spectroradiometer, and compares the two to
+quantify reproduction accuracy.
+
+## Where this fits
+
+LED display calibration is a complex, per-pixel process handled by LED
+processors. OLE-Toolset does not calibrate — it
+**reports on the results** of that vendor calibration. The more accurate a display's
+native calibration is, the easier it is for downstream tools to
+build on top of it — creative LUTs, colour space transforms, and camera-match
+workflows all benefit from a predictable starting point.
 
 ## Why open-source measurement reports?
 
 Traditional display spec sheets describe _capability_ — peak brightness, gamut
-coverage contrast ratio. They do not show whether a display tracks its target
+coverage, contrast ratio. They do not show whether a display tracks its target
 EOTF, holds a neutral grey scale, or reproduces colours accurately inside the
 gamut boundary. The numbers are best-case snapshots, not distributions, and they
 are not independently verifiable.
