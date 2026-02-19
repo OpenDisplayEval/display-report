@@ -12,13 +12,11 @@ def main():
     from pathlib import Path
 
     import numpy as np
-    import specio.spectrometers.colorimetry_research as cr
-    from specio.fileio import (
-        MeasurementList,
-        MeasurementList_Notes,
-        save_measurements,
+    from specio._device_implementations.colorimetry_research import (
+        colorimetry_research as cr,
     )
-    from specio.spectrometers.common import VirtualSpectrometer
+    from specio.serialization import CSMF_Data, CSMF_Metadata, save_csmf_file
+    from specio.spectrometers import VirtualSpectrometer
 
     from ole.ETC.analysis import ColourPrecisionAnalysis
     from ole.measurement_controllers import (
@@ -173,7 +171,10 @@ def main():
         "--measurement-speed",
         choices=[
             *zip(
-                *[v.values for v in cr.MeasurementSpeed.__members__.values()],
+                *[
+                    v.values
+                    for v in cr.CRSpectrometer.MeasurementSpeed.__members__.values()
+                ],
                 strict=False,
             )
         ][2],
@@ -232,7 +233,9 @@ def main():
             meter = VirtualSpectrometer()
         else:
             meter = cr.CRSpectrometer.discover()
-            meter.measurement_speed = cr.MeasurementSpeed(args.measurement_speed)
+            meter.measurement_speed = cr.CRSpectrometer.MeasurementSpeed(
+                args.measurement_speed
+            )
 
         dmc = DisplayMeasureController(
             tpg=tpg,
@@ -251,34 +254,23 @@ def main():
 
         tpg.send_color((0, 0, 0))
 
+    csmf_data = CSMF_Data(
+        test_colors=test_colors.colors,
+        order=test_colors.order.tolist(),
+        measurements=np.asarray(measurements),
+        metadata=CSMF_Metadata(notes=args.device_name),
+    )
+
     try:
-        data_analysis = ColourPrecisionAnalysis(
-            MeasurementList(
-                test_colors=test_colors.colors,
-                order=test_colors.order.tolist(),
-                measurements=np.asarray(measurements),
-            )
-        )
+        data_analysis = ColourPrecisionAnalysis(csmf_data)
         print(data_analysis)
     except Exception as e:
-        save_measurements(
-            str(save_path.resolve()),
-            measurements=measurements,
-            order=test_colors.order.tolist(),
-            testColors=test_colors.colors,
-            notes=MeasurementList_Notes(notes=args.device_name),
-        )
+        save_csmf_file(str(save_path.resolve()), ml=csmf_data)
         raise RuntimeError(
             f"Failed to analyze measurements. Saving file to: {save_path:s}"
         ) from e
 
-    save_measurements(
-        str(save_path.resolve()),
-        measurements=measurements,
-        order=test_colors.order.tolist(),
-        testColors=test_colors.colors,
-        notes=MeasurementList_Notes(notes=args.device_name),
-    )
+    save_csmf_file(str(save_path.resolve()), ml=csmf_data)
 
     print(f"File Saved to: {save_path:s}")
 
