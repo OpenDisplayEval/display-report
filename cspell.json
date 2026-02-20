@@ -18,6 +18,7 @@
     "greyscale",
     "gridspec",
     "icvfx",
+    "intp",
     "lambertian",
     "loggable",
     "matplotlib",

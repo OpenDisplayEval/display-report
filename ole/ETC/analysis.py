@@ -156,7 +156,7 @@ class ColourPrecisionAnalysis:
 
         tmp["spd"] = np.mean(tmp["values"], axis=1)
         tmp["spd"] = savgol_filter(tmp["spd"], 5, 2, mode="nearest")
-        tmp["spd"] = SpectralDistribution(tmp["spd"], domain=spd_shape)
+        tmp["spd"] = SpectralDistribution(np.asarray(tmp["spd"]), domain=spd_shape)
 
         tmp["XYZ"] = sd_to_XYZ(SpectralDistribution(tmp["spd"], spd_shape), k=683)
         tmp["power"] = np.sum(tmp["spd"].values)
