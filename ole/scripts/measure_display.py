@@ -204,12 +204,12 @@ def main():
     )
 
     parser.add_argument(
-        "--tile-name",
+        "--device-name",
         help=(
             "A name / metadata string that will be embedded in the file. Used "
             "later to determine the header of the ETC Calibration Precision Report"
         ),
-        default=datetime_now().strftime("Tile Measurements %y-%m-%d %H:%M"),
+        default=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M"),
         required=False,
         type=str,
     )
@@ -267,7 +267,7 @@ def main():
             measurements=measurements,
             order=test_colors.order.tolist(),
             testColors=test_colors.colors,
-            notes=MeasurementList_Notes(notes=args.tile_name),
+            notes=MeasurementList_Notes(notes=args.device_name),
         )
         raise RuntimeError(
             f"Failed to analyze measurements. Saving file to: {save_path:s}"
@@ -278,7 +278,7 @@ def main():
         measurements=measurements,
         order=test_colors.order.tolist(),
         testColors=test_colors.colors,
-        notes=MeasurementList_Notes(notes=args.tile_name),
+        notes=MeasurementList_Notes(notes=args.device_name),
     )
 
     print(f"File Saved to: {save_path:s}")
