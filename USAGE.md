@@ -2,14 +2,20 @@
 
 ## Hardware Setup
 
-1. **Test pattern generator** — sends RGB code values directly to the display
-   over SDI/HDMI, bypassing OS/GPU colour management. Supported devices are
-   determined by
+1. **Test PC** — runs the measurement and analysis software.
+
+2. **Display under test** — the display being evaluated. Set to PQ / native
+   gamut mode before measuring. Note the target bit depth, maximum luminance
+   (nits), and HDR parameters for the measurement session.
+
+3. **Test pattern generator** — sends PQ (ST-2084) encoded RGB code values
+   directly to the display via HDMI, bypassing PC OS/GPU colour management.
+   Supported devices are determined by
    [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen).
 
-2. **Spectroradiometer** — measures the display's light output (spectral power
-   distribution, XYZ tristimulus) for each test patch. Connected via USB,
-   auto-discovered at runtime. Supported devices are determined by
+4. **Spectroradiometer** — measures the display's light output (spectral power
+   distribution, XYZ tristimulus) for each test patch. Supported devices are
+   determined by
    [colour-specio](https://github.com/colour-science/colour-specio).
 
 ```mermaid
@@ -23,24 +29,20 @@ flowchart LR
     Report[Fidelity report]
 
     PC -- "RGB code values" --> BMD --> TPG -- "SDI / HDMI" --> DUT
-    DUT -. "light output" .-> SR
-    SR --> CS -- "XYZ tristimulus" --> PC
+    PC ~~~ CS -- "XYZ tristimulus" --> PC
+    CS ~~~ SR --> CS
+    SR -. "light output" .- DUT
     PC --> Report
 ```
 
 ## Workflow
 
-### 1. Configure Display Settings
+### 1. Measure — `ole_measure`
 
-Set the display to PQ / native gamut mode. Determine the target bit depth,
-maximum luminance (nits), and HDR parameters for the measurement session.
-
-### 2. Measure — `ole_measure`
-
-Sends PQ-encoded test patches (grey ramps, colour cubes, blacks, whites, random
-colours) to the display via the test pattern generator while the spectroradiometer
-captures XYZ tristimulus values for each patch. Produces a `.csmf` (Colour
-Science Measurement File) containing all stimulus-response pairs.
+Sends PQ-encoded test patches to the display via the test pattern generator
+while the spectroradiometer captures XYZ tristimulus values for each patch.
+Produces a `.csmf` (Colour Science Measurement File) containing all
+stimulus-response pairs.
 
 ```bash
 uv run ole_measure \
@@ -51,7 +53,7 @@ uv run ole_measure \
     --tile-name "Display A — Panel 3"
 ```
 
-### 3. Analyze — `ole_analyze`
+### 2. Analyze — `ole_analyze`
 
 Takes stimulus-response pairs from a `.csmf` file, derives the display's native
 primary matrix, computes expected colorimetric values for every sent code value,
@@ -68,7 +70,7 @@ and compares them against measured output. Generates a PDF report with:
 uv run ole_analyze path/to/measurements.csmf
 ```
 
-### 4. Anonymize — `ole_anonymize`
+### 3. Anonymize — `ole_anonymize`
 
 Strips identifying metadata (tile names, timestamps, notes) from measurement
 files for sharing or publication.
@@ -83,9 +85,9 @@ uv run ole_anonymize path/to/measurements.csmf
 
 - **Python >=3.12, <3.15**
 - **[uv](https://docs.astral.sh/uv/)** — Python package manager
-- **TPG drivers** — install the drivers for your test pattern generator
-  (see [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen) for
-  supported hardware and setup)
+- **TPG drivers** — install the drivers for your test pattern generator (see
+  [bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen) for supported
+  hardware and setup)
 
 ### Setup
 
