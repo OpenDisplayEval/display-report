@@ -88,9 +88,9 @@ def main():
     )
 
     parser.add_argument(
-        "--max-nits",
+        "--max-luminance",
         default=1500,
-        help="The Tile Max Nits, typically as advertised. Default=1500",
+        help="The display max luminance in cd/m² (nits), typically as advertised. Default=1500",
         required=False,
         type=float,
     )
@@ -224,7 +224,7 @@ def main():
         random=args.random,
         quantized_bits=args.bit_depth,
         first_light=args.min_above_black,
-        max_nits=args.max_nits,
+        max_luminance=args.max_luminance,
     )
     test_colors = generate_colors(tcc)
     tpg = TPGController(args.tpg_ip, port=args.tpg_port)

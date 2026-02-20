@@ -144,7 +144,7 @@ def plot_chromaticity_error(data: ColourPrecisionAnalysis, ax: Axes | None = Non
     )
     ax.legend(
         [*gamut_artists, native_gamut_artist],
-        [*[g.name for g in gamuts], "Tile Native"],
+        [*[g.name for g in gamuts], "Display Native"],
         loc=(0.60, 0.1),
         fontsize=8,
     )
@@ -173,7 +173,7 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
 
     ax.scatter(
         data.grey["data_levels"],
-        data.grey["nits"],
+        data.grey["luminance"],
         s=20,
         color=[0.2, 0.32, 0.6],
         zorder=100,
@@ -186,12 +186,12 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
     ax.set_yticks(2.0 ** np.arange(-3, 14))
     ax.set_xticks((2.0 ** np.arange(6, 11)) - 1, ["63", "127", "255", "511", "1023"])
 
-    x_1000nits = pq.eotf_inverse_ST2084(1000) * 1023
-    ax.plot([x_1000nits, x_1000nits], [0, 1000], color="#5a9c9e")
+    x_1000cd = pq.eotf_inverse_ST2084(1000) * 1023
+    ax.plot([x_1000cd, x_1000cd], [0, 1000], color="#5a9c9e")
     ax.text(
-        x_1000nits + 25,  # type: ignore
+        x_1000cd + 25,  # type: ignore
         0.15,
-        "1000 nits",
+        "1000 cd/m² (nits)",
         fontsize=8,
         ha="left",
         color="#5a9c9e",
@@ -205,20 +205,20 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
     )
     ax.set_title("PQ EOTF Performance")
     ax.set_xlabel("10-bit Code Value (Log)")
-    ax.set_ylabel("Luminance (nits, Log)")
+    ax.set_ylabel("Luminance — cd/m² (nits), Log")
 
-    max_nits = np.max([m[0][1] for m in data.grey["avg_scale"]])
+    max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
 
     ax.plot(
-        [63, pq.eotf_inverse_ST2084(max_nits) * 1023],  # type: ignore
-        [max_nits, max_nits],
+        [63, pq.eotf_inverse_ST2084(max_luminance) * 1023],  # type: ignore
+        [max_luminance, max_luminance],
         color="#6f5481",
         zorder=50,
     )
     ax.text(
         64,
-        max_nits + 2**11 * 0.1,
-        f"Tile Max: {max_nits:.0f} nits",
+        max_luminance + 2**11 * 0.1,
+        f"Display Max: {max_luminance:.0f} cd/m² (nits)",
         va="bottom",
         fontsize=8,
         color="#6f5481",
@@ -282,9 +282,9 @@ def plot_wp_accuracy(
 
     cct_list = np.array(list(zip(*data.grey["avg_scale"], strict=False))[2])
 
-    def plot_max_nits_line(ax: Axes) -> tuple[float, float]:
-        max_nits = np.max([m[0][1] for m in data.grey["avg_scale"]])
-        x_max_nits = pq.eotf_inverse_ST2084(max_nits) * 1023
+    def plot_max_luminance_line(ax: Axes) -> tuple[float, float]:
+        max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
+        x_max_luminance = pq.eotf_inverse_ST2084(max_luminance) * 1023
 
         ax.set_xlim(left=pq.eotf_inverse_ST2084(0.1) * 1023, right=1023)
         ax.set_xticks(
@@ -292,8 +292,8 @@ def plot_wp_accuracy(
             [],
             minor=True,
         )
-        ax.plot([x_max_nits, x_max_nits], ax.get_ylim(), color="#6f5481")
-        return (max_nits, x_max_nits)
+        ax.plot([x_max_luminance, x_max_luminance], ax.get_ylim(), color="#6f5481")
+        return (max_luminance, x_max_luminance)
 
     def plot_wp_cct(ax: Axes) -> None:
         y_lim = (5500, 7500)
@@ -305,7 +305,7 @@ def plot_wp_accuracy(
         ax.plot(ax.get_xlim(), (tgt_cct[0], tgt_cct[0]))
 
         ax.text(pq.eotf_inverse_ST2084(0.11) * 1013, 6540, "D65", fontsize=8)
-        plot_max_nits_line(ax)
+        plot_max_luminance_line(ax)
         _plot_y_tolerance_bg(
             ax,
             tol_bounds=[
@@ -361,7 +361,7 @@ def plot_wp_accuracy(
         ax.plot(ax.get_xlim(), (tgt_cct[1], tgt_cct[1]))
         ax.text(pq.eotf_inverse_ST2084(0.11) * 1013, 0.004, "D65", fontsize=8)
 
-        x_max_nits = plot_max_nits_line(ax)
+        x_max_luminance = plot_max_luminance_line(ax)
         ax.scatter(data.grey["uniques"][0], cct_list[:, 1])
         _plot_y_tolerance_bg(
             ax,
@@ -398,9 +398,9 @@ def plot_wp_accuracy(
             )
 
         ax.text(
-            x_max_nits[1] - 25,
+            x_max_luminance[1] - 25,
             ax.get_ylim()[0] + 0.001,
-            f"Tile Max: {x_max_nits[0]:.0f} nits",
+            f"Display Max: {x_max_luminance[0]:.0f} cd/m² (nits)",
             fontsize=8,
             ha="right",
             color="#6f5481",
@@ -459,17 +459,19 @@ def plot_brightness_errors(
         ).flatten()
     )
 
-    max_nits = np.max([m[0][1] for m in data.grey["avg_scale"]])
-    x_max_nits = pq.eotf_inverse_ST2084(max_nits)
+    max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
+    x_max_luminance = pq.eotf_inverse_ST2084(max_luminance)
 
     ax.set_xticks(xticks, xtick_labels)
     ax.set_xticks(xticks_minor, minor=True)
 
-    ax.plot([x_max_nits, x_max_nits], ax.get_ylim(), zorder=-1, color="#6f5481")
+    ax.plot(
+        [x_max_luminance, x_max_luminance], ax.get_ylim(), zorder=-1, color="#6f5481"
+    )
     ax.text(
-        x_max_nits - 0.02,  # type: ignore
+        x_max_luminance - 0.02,  # type: ignore
         ax.get_ylim()[0] + 1.5**4,
-        f"Tile Max: {max_nits:.0f} nits",
+        f"Display Max: {max_luminance:.0f} cd/m² (nits)",
         ha="right",
         zorder=-1,
         fontsize=8,
@@ -562,12 +564,12 @@ def plot_chromatic_error(data: ColourPrecisionAnalysis, ax: Axes | None = None) 
             np.arange(2, 10).reshape(1, -1) * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
         ).flatten()
     )
-    x_max_nits = pq.eotf_inverse_ST2084(data.white["nits_quantized"])
+    x_max_luminance = pq.eotf_inverse_ST2084(data.white["luminance_quantized"])
 
     ax.set_xticks(xticks, xtick_labels)
     ax.set_xticks(xticks_minor, minor=True)
 
-    ax.plot([x_max_nits, x_max_nits], ax.get_ylim(), zorder=-1)
+    ax.plot([x_max_luminance, x_max_luminance], ax.get_ylim(), zorder=-1)
 
     ax.set_title("Chromatic Error (∆ICtCp)")
 
