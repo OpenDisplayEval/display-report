@@ -64,15 +64,15 @@ is roughly the same size as the nearby ellipse, the error in that region is
 approximately 1 standard deviation of colour matching (SDCM).
 
 Three gamut outlines are overlaid for reference: P3-D65 (red dashed), BT.2020
-(green dashed), and the tile's estimated native gamut (black solid).
+(green dashed), and the display's estimated native gamut (black solid).
 
 ### PQ EOTF performance
 
 Plots the ideal PQ transfer function (red curve) against measured grey-ramp
 luminance values (blue dots) on log-log axes. The x-axis shows 10-bit code
-values; the y-axis shows luminance in nits. Two reference lines mark 1000 nits
-(teal) and the tile's measured maximum luminance (purple). A display tracking PQ
-correctly will have its dots fall directly on the red curve up to the tile
+values; the y-axis shows luminance in cd/m² (nits). Two reference lines mark 1000 cd/m² (nits)
+(teal) and the display's measured maximum luminance (purple). A display tracking PQ
+correctly will have its dots fall directly on the red curve up to the display
 maximum, then clip above it.
 
 ### White point stability
@@ -127,7 +127,7 @@ acceptable.
 git clone https://github.com/OpenLEDEval/OLE-Toolset.git
 cd OLE-Toolset
 uv sync
-uv run ole_measure --max-nits 1500 --bit-depth 10 --save-directory ./measurements
+uv run ole_measure --max-luminance 1500 --bit-depth 10 --save-directory ./measurements
 uv run ole_analyze ./measurements/<file>.csmf
 ```
 

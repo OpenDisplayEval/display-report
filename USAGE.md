@@ -6,7 +6,7 @@
 
 2. **Display under test** — the display being evaluated. Set to PQ / native
    gamut mode before measuring. Note the target bit depth, maximum luminance
-   (nits), and HDR parameters for the measurement session.
+   (cd/m²), and HDR parameters for the measurement session.
 
 3. **Test pattern generator** — sends PQ (ST-2084) encoded RGB code values
    directly to the display via HDMI, bypassing PC OS/GPU colour management.
@@ -46,11 +46,11 @@ stimulus-response pairs.
 
 ```bash
 uv run ole_measure \
-    --max-nits 1500 \
+    --max-luminance 1500 \
     --bit-depth 10 \
     --warmup 10 \
     --save-directory ./measurements \
-    --tile-name "Display A — Panel 3"
+    --device-name "Display A — Panel 3"
 ```
 
 ### 2. Analyze — `ole_analyze`
@@ -72,7 +72,7 @@ uv run ole_analyze path/to/measurements.csmf
 
 ### 3. Anonymize — `ole_anonymize`
 
-Strips identifying metadata (tile names, timestamps, notes) from measurement
+Strips identifying metadata (device names, timestamps, notes) from measurement
 files for sharing or publication.
 
 ```bash
@@ -112,7 +112,7 @@ Send test patterns and capture spectroradiometer measurements.
 | ---------------------- | -------- | ------------------------------------------------------ |
 | `--device-index`       | `0`      | TPG device index                                       |
 | `--bit-depth`          | auto     | Bit depth for test colours (auto-detected from device) |
-| `--max-nits`           | `1500`   | Tile maximum luminance in nits                         |
+| `--max-luminance`      | `1500`   | Display maximum luminance in cd/m² (nits)              |
 | `--min-above-black`    | `0.1`    | Minimum measurable PQ value                            |
 | `--warmup`             | `10`     | Warmup time in minutes (random colour stabilization)   |
 | `--stabilization-time` | `5`      | Seconds of random colours between patches              |
@@ -125,7 +125,7 @@ Send test patterns and capture spectroradiometer measurements.
 | `--use-virtual`        | —        | Use virtual spectrometer (for debugging)               |
 | `--save-directory`     | `./`     | Output directory                                       |
 | `--save-file`          | auto     | Output filename (default: timestamped)                 |
-| `--tile-name`          | auto     | Metadata label embedded in output file                 |
+| `--device-name`        | auto     | Metadata label embedded in output file                 |
 
 ### `ole_analyze`
 
