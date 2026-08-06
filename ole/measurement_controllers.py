@@ -16,8 +16,7 @@ from ole.utilities import datetime_now
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
-    from specio.measurement import Measurement
-    from specio.spectrometers import SpecRadiometer
+    from specio.common import SPDMeasurement, SpecRadiometer
 
     from ole.test_colors import (
         TestColors,
@@ -43,7 +42,7 @@ class ProgressUpdate:
     """
 
     progress_factor: float
-    last_measurement: Measurement
+    last_measurement: SPDMeasurement
     num_colors: int
 
 
@@ -114,9 +113,9 @@ class DisplayMeasureController:
         color_list: TestColors,
         random_colors_duration: float | None = None,
         progress_callbacks: Iterable[ProgressCallback] = set(),
-        max_color_value: int = 1023,
+        max_color_value: int | None = None,
     ) -> None:
-        """Construct a new DisplayMeasurementController for coordinating the
+        """Construct a new DisplaySPDMeasurementController for coordinating the
         measurement of a list of test colors via a TPG object and a
         Spectrometer.
 
@@ -135,10 +134,11 @@ class DisplayMeasureController:
             to the TPGController, by default None
         progress_callbacks : Iterable[ProgressCallback], optional
             A set of call backs to issue `ProgressUpdate`s to, by default set()
-        max_color_value : int, optional
+        max_color_value : int | None, optional
             The maximum integer color value for the device's bit depth
             (e.g. 255 for 8-bit, 1023 for 10-bit, 4095 for 12-bit).
-            Used for scaling random colors. By default 1023.
+            Used for scaling random colors. When ``None``, derived from
+            ``tpg.max_color_value``. By default None.
         """
         self._progress_callbacks = set()
         for f in progress_callbacks:
@@ -147,7 +147,9 @@ class DisplayMeasureController:
         self.tpg = tpg
         self.cr = cr
         self.color_list = color_list
-        self.max_color_value = max_color_value
+        self.max_color_value = (
+            max_color_value if max_color_value is not None else tpg.max_color_value
+        )
 
         self.random_colors_duration = (
             random_colors_duration if random_colors_duration is not None else 5
@@ -205,7 +207,7 @@ class DisplayMeasureController:
         ----------
         duration : float | None, optional
             the duration. If None, then the
-            `DisplayMeasurementController.random_colors_duration` is used.
+            `DisplaySPDMeasurementController.random_colors_duration` is used.
             `random_colors_duration` has a default value of 5s.
         """
         if duration is None:
@@ -219,15 +221,15 @@ class DisplayMeasureController:
             self.tpg.send_color(c * self.max_color_value)
             time.sleep(3 / 24)  # ~12 FPS Maximum
 
-    class MeasurementError(Exception):
+    class SPDMeasurementError(Exception):
         """Raised if a measurement fails after multiple attempts"""
 
-    def _get_measurement(self, test_color: ArrayLike, n: int = 10) -> Measurement:
+    def _get_measurement(self, test_color: ArrayLike, n: int = 10) -> SPDMeasurement:
         """Trigger a robust measurement of a specific test color from the
         spectrometer.
 
         Tries to get measurement multiple times. If no attempt succeeds then a
-        `MeasurementError` will be raised. Uses random colors as warmup before
+        `SPDMeasurementError` will be raised. Uses random colors as warmup before
         the measurement to stabilize the results.
 
         Parameters
@@ -242,7 +244,7 @@ class DisplayMeasureController:
 
         Raises
         ------
-        self.MeasurementError
+        self.SPDMeasurementError
             Could not get any valid measurements
         """
         measurement = None
@@ -258,13 +260,13 @@ class DisplayMeasureController:
                 continue  # There was some failure, continue and try again.
             break
         if measurement is None:
-            raise self.MeasurementError(
+            raise self.SPDMeasurementError(
                 f"Could not get measurement from spectrometer after {n:d} attempts"
             ) from last_exception
 
         return measurement
 
-    def run_measurements(self, warmup_time: float = 0) -> list[Measurement]:
+    def run_measurements(self, warmup_time: float = 0) -> list[SPDMeasurement]:
         """Start and run the measurement cycle. This function blocks until the
         measurement cycle is complete!
 
@@ -276,12 +278,12 @@ class DisplayMeasureController:
 
         Returns
         -------
-        list[Measurement]
+        list[SPDMeasurement]
             The list of resulting measurements
         """
         self.generate_random_colors(warmup_time)
 
-        measurements: list[Measurement] = []
+        measurements: list[SPDMeasurement] = []
         for idx, c in enumerate(self.color_list.colors):
             m = self._get_measurement(c)
             measurements.append(m)

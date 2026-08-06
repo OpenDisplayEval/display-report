@@ -3,6 +3,8 @@ Defines the plotting and analysis functions for the Entertainment Technology
 Center LED Color Accuracy Report
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import partial
 from textwrap import dedent
@@ -24,14 +26,16 @@ from colour.models.rgb.ictcp import XYZ_to_ICtCp
 from colour.models.rgb.transfer_functions import st_2084 as pq
 from colour.plotting.common import XYZ_to_plotting_colourspace
 from colour.temperature.ohno2013 import XYZ_to_CCT_Ohno2013
-from specio.fileio import (
-    MeasurementList,
-    MeasurementList_Notes,
-    load_measurements,
+from specio.serialization import (
+    CSMF_Data,
+    CSMF_Metadata,
+    load_csmf_file,
 )
 
 if TYPE_CHECKING:
     from colour.hints import NDArrayBoolean, NDArrayFloat
+
+    from ole.device_info import DeviceInfo
 
 
 @dataclass
@@ -406,19 +410,34 @@ class ColourPrecisionAnalysis:
         return self._err
 
     @property
-    def metadata(self) -> MeasurementList_Notes:
+    def metadata(self) -> CSMF_Metadata:
         """Measurement metadata.
 
         Returns
         -------
-        MeasurementList_Notes
+        CSMF_Metadata
             The metadata saved in the measurement file.
         """
         return self._data.metadata
 
     @metadata.setter
-    def metadata(self, new_data: MeasurementList_Notes):
+    def metadata(self, new_data: CSMF_Metadata):
         self._data.metadata = new_data
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Parsed structured device info from metadata, if available.
+
+        Returns
+        -------
+        DeviceInfo | None
+            ``None`` when the notes field contains legacy plain text.
+        """
+        from ole.device_info import DeviceInfo
+
+        if self.metadata.notes is None or self.metadata.notes == "":
+            return None
+        return DeviceInfo.from_notes_string(self.metadata.notes)
 
     @property
     def shortname(self) -> str:
@@ -436,6 +455,10 @@ class ColourPrecisionAnalysis:
 
         if self.metadata.notes is None or self.metadata.notes == "":
             return self._data.shortname
+
+        info = self.device_info
+        if info is not None:
+            return info.display_name
 
         return self.metadata.notes
 
@@ -464,8 +487,8 @@ class ColourPrecisionAnalysis:
 
         adapting_luminance: float  # luminance of 20% grey object
 
-    def __init__(self, measurements: MeasurementList):
-        self._data: MeasurementList = measurements
+    def __init__(self, measurements: CSMF_Data):
+        self._data: CSMF_Data = measurements
 
         self.analysis_conditions = self.AnalysisConditions(
             adapting_luminance=500 / (5 * np.pi)
@@ -490,7 +513,7 @@ def analyze_measurements_from_file(filename: str) -> ColourPrecisionAnalysis:
     -------
     ColourPrecisionAnalysis
     """
-    measurements = load_measurements(filename)
+    measurements = load_csmf_file(filename)
 
     fundamentalData = ColourPrecisionAnalysis(measurements)
     return fundamentalData

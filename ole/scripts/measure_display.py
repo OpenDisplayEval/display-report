@@ -12,14 +12,13 @@ def main():
     from pathlib import Path
 
     import numpy as np
-    import specio.spectrometers.colorimetry_research as cr
-    from specio.fileio import (
-        MeasurementList,
-        MeasurementList_Notes,
-        save_measurements,
+    from specio._device_implementations.colorimetry_research import (
+        colorimetry_research as cr,
     )
-    from specio.spectrometers.common import VirtualSpectrometer
+    from specio.serialization import CSMF_Data, save_csmf_file
+    from specio.spectrometers import VirtualSpectrometer
 
+    from ole.device_info import resolve_device_metadata
     from ole.ETC.analysis import ColourPrecisionAnalysis
     from ole.measurement_controllers import (
         DisplayMeasureController,
@@ -51,16 +50,9 @@ def main():
     )
 
     parser.add_argument(
-        "--tpg-ip",
-        help="The IP address of the computer running the bmd-signal-gen server",
-        required=True,
-        type=str,
-    )
-
-    parser.add_argument(
-        "--tpg-port",
-        default=4844,
-        help="The port of the bmd-signal-gen server. Default=4844",
+        "--device-index",
+        default=0,
+        help="The DeckLink device index. Default=0",
         required=False,
         type=int,
     )
@@ -109,8 +101,11 @@ def main():
 
     parser.add_argument(
         "--bit-depth",
-        default=10,
-        help=("The bit depth used for the test colors list"),
+        default=None,
+        help=(
+            "The bit depth used for the test colors list. "
+            "When omitted, auto-detected from the DeckLink device's pixel format."
+        ),
         required=False,
         type=int,
     )
@@ -177,7 +172,10 @@ def main():
         "--measurement-speed",
         choices=[
             *zip(
-                *[v.values for v in cr.MeasurementSpeed.__members__.values()],
+                *[
+                    v.values
+                    for v in cr.CRSpectrometer.MeasurementSpeed.__members__.values()
+                ],
                 strict=False,
             )
         ][2],
@@ -207,79 +205,79 @@ def main():
         "--device-name",
         help=(
             "A name / metadata string that will be embedded in the file. Used "
-            "later to determine the header of the ETC Calibration Precision Report"
+            "later to determine the header of the ETC Calibration Precision "
+            "Report. When omitted on an interactive terminal, the device info "
+            "wizard prompts for structured details instead."
         ),
-        default=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M"),
+        default=None,
         required=False,
         type=str,
     )
 
     args = parser.parse_args()
-    tcc = PQ_TestColorsConfig(
-        ramp_samples=args.grey_n,
-        ramp_repeats=1,
-        mesh_size=args.cube_n,
-        blacks=args.black_n,
-        whites=args.white_n,
-        random=args.random,
-        quantized_bits=args.bit_depth,
-        first_light=args.min_above_black,
-        max_luminance=args.max_luminance,
+
+    # Resolve before measuring: the wizard is interactive, and a run takes long
+    # enough that prompting afterwards would leave it blocked on input.
+    metadata = resolve_device_metadata(args)
+
+    with TPGController(device_index=args.device_index) as tpg:
+        bit_depth = args.bit_depth if args.bit_depth is not None else tpg.bit_depth
+
+        tcc = PQ_TestColorsConfig(
+            ramp_samples=args.grey_n,
+            ramp_repeats=1,
+            mesh_size=args.cube_n,
+            blacks=args.black_n,
+            whites=args.white_n,
+            random=args.random,
+            quantized_bits=bit_depth,
+            first_light=args.min_above_black,
+            max_luminance=args.max_luminance,
+        )
+        test_colors = generate_colors(tcc)
+
+        if args.use_virtual == -1:
+            meter = VirtualSpectrometer()
+        else:
+            meter = cr.CRSpectrometer.discover()
+            meter.measurement_speed = cr.CRSpectrometer.MeasurementSpeed(
+                args.measurement_speed
+            )
+
+        dmc = DisplayMeasureController(
+            tpg=tpg,
+            cr=meter,
+            color_list=test_colors,
+            progress_callbacks=[ProgressPrinter()],
+            max_color_value=tcc.quantized_range,
+        )
+        dmc.random_colors_duration = args.stabilization_time
+
+        save_path = Path(args.save_directory, args.save_file)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path = save_path.with_suffix(".csmf")
+
+        measurements = dmc.run_measurements(warmup_time=args.warmup * 60)
+
+        tpg.send_color((0, 0, 0))
+
+    csmf_data = CSMF_Data(
+        test_colors=test_colors.colors,
+        order=test_colors.order.tolist(),
+        measurements=np.asarray(measurements),
+        metadata=metadata,
     )
-    test_colors = generate_colors(tcc)
-    tpg = TPGController(args.tpg_ip, port=args.tpg_port)
-
-    if args.use_virtual == -1:
-        meter = VirtualSpectrometer()
-    else:
-        meter = cr.CRSpectrometer.discover()
-        meter.measurement_speed = cr.MeasurementSpeed(args.measurement_speed)
-
-    dmc = DisplayMeasureController(
-        tpg=tpg,
-        cr=meter,
-        color_list=test_colors,
-        progress_callbacks=[ProgressPrinter()],
-        max_color_value=tcc.quantized_range,
-    )
-    dmc.random_colors_duration = args.stabilization_time
-
-    save_path = Path(args.save_directory, args.save_file)
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    save_path = save_path.with_suffix(".csmf")
-
-    measurements = dmc.run_measurements(warmup_time=args.warmup * 60)
-
-    tpg.send_color((0, 0, 0))
 
     try:
-        data_analysis = ColourPrecisionAnalysis(
-            MeasurementList(
-                test_colors=test_colors.colors,
-                order=test_colors.order.tolist(),
-                measurements=np.asarray(measurements),
-            )
-        )
+        data_analysis = ColourPrecisionAnalysis(csmf_data)
         print(data_analysis)
     except Exception as e:
-        save_measurements(
-            str(save_path.resolve()),
-            measurements=measurements,
-            order=test_colors.order.tolist(),
-            testColors=test_colors.colors,
-            notes=MeasurementList_Notes(notes=args.device_name),
-        )
+        save_csmf_file(str(save_path.resolve()), ml=csmf_data)
         raise RuntimeError(
             f"Failed to analyze measurements. Saving file to: {save_path:s}"
         ) from e
 
-    save_measurements(
-        str(save_path.resolve()),
-        measurements=measurements,
-        order=test_colors.order.tolist(),
-        testColors=test_colors.colors,
-        notes=MeasurementList_Notes(notes=args.device_name),
-    )
+    save_csmf_file(str(save_path.resolve()), ml=csmf_data)
 
     print(f"File Saved to: {save_path:s}")
 
