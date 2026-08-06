@@ -5,6 +5,7 @@ import importlib.resources
 from typing import TYPE_CHECKING
 
 import matplotlib
+import matplotlib.colors
 import matplotlib.font_manager
 import numpy as np
 from colour.colorimetry.datasets.illuminants.sds import SDS_ILLUMINANTS
@@ -109,9 +110,12 @@ def plot_chromaticity_error(data: ColourPrecisionAnalysis, ax: Axes | None = Non
 
     Luv_to_uv(XYZ_to_Luv(data.primary_matrix.T))
 
-    klusters = KMeans(n_clusters=14, n_init=20).fit(data.measured_colors["uvp"])
+    klusters = KMeans(n_clusters=14, n_init=20).fit(data.measured_colors["uvp"])  # type: ignore[reportArgumentType]
     normalize = matplotlib.colors.Normalize(0, 13)
-    colors = matplotlib.cm.nipy_spectral(normalize(klusters.labels_))
+    cmap = plt.get_cmap("nipy_spectral")
+    labels = klusters.labels_
+    assert labels is not None
+    colors = cmap(normalize(labels))
     dist = data.measured_colors["uvp"] - data.expected_colors["uvp"]
 
     for idx in range(klusters.n_clusters):
@@ -286,14 +290,14 @@ def plot_wp_accuracy(
         max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
         x_max_luminance = pq.eotf_inverse_ST2084(max_luminance) * 1023
 
-        ax.set_xlim(left=pq.eotf_inverse_ST2084(0.1) * 1023, right=1023)
+        ax.set_xlim(left=float(pq.eotf_inverse_ST2084(0.1) * 1023), right=1023)
         ax.set_xticks(
             xtick_minor,
             [],
             minor=True,
         )
         ax.plot([x_max_luminance, x_max_luminance], ax.get_ylim(), color="#6f5481")
-        return (max_luminance, x_max_luminance)
+        return (max_luminance, float(x_max_luminance))
 
     def plot_wp_cct(ax: Axes) -> None:
         y_lim = (5500, 7500)
@@ -304,7 +308,7 @@ def plot_wp_accuracy(
         ax.set_xticks(xticks, [])
         ax.plot(ax.get_xlim(), (tgt_cct[0], tgt_cct[0]))
 
-        ax.text(pq.eotf_inverse_ST2084(0.11) * 1013, 6540, "D65", fontsize=8)
+        ax.text(float(pq.eotf_inverse_ST2084(0.11) * 1013), 6540, "D65", fontsize=8)
         plot_max_luminance_line(ax)
         _plot_y_tolerance_bg(
             ax,
@@ -359,7 +363,7 @@ def plot_wp_accuracy(
         ax.set_xticks(xticks, xtick_labels)
 
         ax.plot(ax.get_xlim(), (tgt_cct[1], tgt_cct[1]))
-        ax.text(pq.eotf_inverse_ST2084(0.11) * 1013, 0.004, "D65", fontsize=8)
+        ax.text(float(pq.eotf_inverse_ST2084(0.11) * 1013), 0.004, "D65", fontsize=8)
 
         x_max_luminance = plot_max_luminance_line(ax)
         ax.scatter(data.grey["uniques"][0], cct_list[:, 1])
@@ -511,10 +515,12 @@ def _plot_y_tolerance_bg(
     bg_image = bg_image.reshape(-1, 1, 3)
     return ax.imshow(
         bg_image,
-        extent=[*ax.get_xlim(), *ax.get_ylim()],
-        aspect=aspect_multiplier
-        * abs(np.diff(ax.get_xlim()))
-        / abs(np.diff(ax.get_ylim())),
+        extent=(*ax.get_xlim(), *ax.get_ylim()),
+        aspect=float(
+            aspect_multiplier
+            * abs(np.diff(ax.get_xlim()))
+            / abs(np.diff(ax.get_ylim()))
+        ),
     )
 
 

@@ -24,7 +24,7 @@ class TestColors:
     """
 
     colors: npt.NDArray[np.int16]
-    order: npt.NDArray[np.int16]
+    order: npt.NDArray[np.intp]
 
 
 @dataclass
@@ -44,7 +44,7 @@ class TestColorsConfig:
     random: int = 0
 
     quantized_bits: int = 10
-    first_light: int = 0
+    first_light: float = 0.0
 
     def __post_init__(self):
         """Generate the derived parameters"""
