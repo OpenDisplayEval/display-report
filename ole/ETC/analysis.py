@@ -3,6 +3,8 @@ Defines the plotting and analysis functions for the Entertainment Technology
 Center LED Color Accuracy Report
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import partial
 from textwrap import dedent
@@ -32,6 +34,8 @@ from specio.serialization import (
 
 if TYPE_CHECKING:
     from colour.hints import NDArrayBoolean, NDArrayFloat
+
+    from ole.device_info import DeviceInfo
 
 
 @dataclass
@@ -421,6 +425,21 @@ class ColourPrecisionAnalysis:
         self._data.metadata = new_data
 
     @property
+    def device_info(self) -> DeviceInfo | None:
+        """Parsed structured device info from metadata, if available.
+
+        Returns
+        -------
+        DeviceInfo | None
+            ``None`` when the notes field contains legacy plain text.
+        """
+        from ole.device_info import DeviceInfo
+
+        if self.metadata.notes is None or self.metadata.notes == "":
+            return None
+        return DeviceInfo.from_notes_string(self.metadata.notes)
+
+    @property
     def shortname(self) -> str:
         """A short name that can be used in UI elements to identify this set of
         display measurements. Usually a model name and or serial number. If no user
@@ -436,6 +455,10 @@ class ColourPrecisionAnalysis:
 
         if self.metadata.notes is None or self.metadata.notes == "":
             return self._data.shortname
+
+        info = self.device_info
+        if info is not None:
+            return info.display_name
 
         return self.metadata.notes
 

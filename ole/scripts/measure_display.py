@@ -15,9 +15,10 @@ def main():
     from specio._device_implementations.colorimetry_research import (
         colorimetry_research as cr,
     )
-    from specio.serialization import CSMF_Data, CSMF_Metadata, save_csmf_file
+    from specio.serialization import CSMF_Data, save_csmf_file
     from specio.spectrometers import VirtualSpectrometer
 
+    from ole.device_info import resolve_device_metadata
     from ole.ETC.analysis import ColourPrecisionAnalysis
     from ole.measurement_controllers import (
         DisplayMeasureController,
@@ -204,14 +205,20 @@ def main():
         "--device-name",
         help=(
             "A name / metadata string that will be embedded in the file. Used "
-            "later to determine the header of the ETC Calibration Precision Report"
+            "later to determine the header of the ETC Calibration Precision "
+            "Report. When omitted on an interactive terminal, the device info "
+            "wizard prompts for structured details instead."
         ),
-        default=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M"),
+        default=None,
         required=False,
         type=str,
     )
 
     args = parser.parse_args()
+
+    # Resolve before measuring: the wizard is interactive, and a run takes long
+    # enough that prompting afterwards would leave it blocked on input.
+    metadata = resolve_device_metadata(args)
 
     with TPGController(device_index=args.device_index) as tpg:
         bit_depth = args.bit_depth if args.bit_depth is not None else tpg.bit_depth
@@ -258,7 +265,7 @@ def main():
         test_colors=test_colors.colors,
         order=test_colors.order.tolist(),
         measurements=np.asarray(measurements),
-        metadata=CSMF_Metadata(notes=args.device_name),
+        metadata=metadata,
     )
 
     try:

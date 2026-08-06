@@ -584,6 +584,10 @@ def plot_chromatic_error(data: ColourPrecisionAnalysis, ax: Axes | None = None) 
 def plot_report_header(ax: Axes, data: ColourPrecisionAnalysis):
     """Plot the report header / title bar.
 
+    When structured device info is available, the display name is shown as the
+    main title with optional hardware details rendered as smaller secondary text.
+    Legacy plain-text notes fall back to a single-line header.
+
     Parameters
     ----------
     ax : Axes
@@ -593,7 +597,33 @@ def plot_report_header(ax: Axes, data: ColourPrecisionAnalysis):
     """
     ax.set_ylim(0, 1)
     ax.set_axis_off()
-    ax.text(0, 0, f"{data.shortname}", va="bottom", fontsize=16)
+
+    info = data.device_info
+    if info is None:
+        ax.text(0, 0, f"{data.shortname}", va="bottom", fontsize=16)
+        return
+
+    ax.text(0, 0.15, info.display_name, va="bottom", fontsize=16)
+
+    detail_parts: list[str] = []
+    if info.firmware_version:
+        detail_parts.append(f"FW: {info.firmware_version}")
+    if info.receiver_card_firmware:
+        detail_parts.append(f"Receiver FW: {info.receiver_card_firmware}")
+    if info.driver_chip:
+        detail_parts.append(f"Driver: {info.driver_chip}")
+    if info.led_type:
+        detail_parts.append(f"LED: {info.led_type}")
+
+    if detail_parts:
+        ax.text(
+            0,
+            0.05,
+            "  |  ".join(detail_parts),
+            va="top",
+            fontsize=8,
+            color="0.4",
+        )
 
 
 def plot_error_statistics(

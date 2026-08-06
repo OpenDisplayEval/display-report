@@ -56,7 +56,8 @@
     "pytest",
     "RGBLE",
     "RGBXLE",
-    "SDCM"
+    "SDCM",
+    "questionary"
   ],
   "ignorePaths": [
     ".venv",

@@ -19,6 +19,7 @@ dependencies = [
     "pymoo>=0.6.1.1,<0.7",
     "telnetlib3>=2.0.4,<3",
     "exscript>=2.6.28,<3",
+    "questionary>=2.1.1",
 ]
 
 [project.scripts]
@@ -133,6 +134,7 @@ convention = "numpy"
 "tests/*" = ["ARG", "T20"]
 "tasks.py" = ["T20"]
 "ole/scripts/*" = ["T201"]
+"ole/device_info.py" = ["T201"]
 "ole/ETC/fonts/__init__.py" = ["F403"]
 "*.ipynb" = ["E402"]
 
