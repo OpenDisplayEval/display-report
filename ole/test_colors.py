@@ -69,7 +69,7 @@ class PQ_TestColorsConfig(TestColorsConfig):
     PQ scaling.
     """
 
-    max_nits: float = 10000
+    max_luminance: float = 10000
     first_light: float = 0
 
     def __post_init__(self):
@@ -79,9 +79,9 @@ class PQ_TestColorsConfig(TestColorsConfig):
             super().__post_init__()
 
         self.max_channel_value: int = int(
-            pq.eotf_inverse_ST2084(self.max_nits) * self.quantized_range // 1
+            pq.eotf_inverse_ST2084(self.max_luminance) * self.quantized_range // 1
         )
-        self.max_nits = float(
+        self.max_luminance = float(
             pq.eotf_ST2084(self.max_channel_value / self.quantized_range)
         )
 
@@ -177,7 +177,7 @@ def generate_colors(
 
 DEFAULT_PQ_COLOR_LIST = generate_colors(
     PQ_TestColorsConfig(
-        max_nits=1500,
+        max_luminance=1500,
         first_light=0.1,
         blacks=10,
         whites=5,

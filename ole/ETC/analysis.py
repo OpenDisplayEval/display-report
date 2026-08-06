@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class ReflectanceData:
-    """The reflectance characteristics for the measured LED tile. These are
+    """The reflectance characteristics for the measured display. These are
     measured separately from the color accuracy measurements. Reflectance is
     measured relative to a reference sample, such as a pressed PTFE puck or
     fluorilon which have a lambertian reflectance value of ~99.8%
@@ -219,7 +219,7 @@ class ColourPrecisionAnalysis:
         grey["measurements"] = self._data.measurements[grey_mask]
         grey["data_levels"] = self._data.test_colors[grey_mask, 0]
         grey["cct"] = np.array([(m.cct, m.duv) for m in grey["measurements"]])
-        grey["nits"] = np.array(
+        grey["luminance"] = np.array(
             [m.XYZ[1] - self.black["XYZ"][1] for m in grey["measurements"]]
         )
         grey["uniques"] = np.unique(
@@ -267,7 +267,7 @@ class ColourPrecisionAnalysis:
             [m.XYZ - self.black["XYZ"] for m in single_color_measurements],
             axis=0,
         )
-        white["nits_quantized"] = pq.eotf_ST2084(
+        white["luminance_quantized"] = pq.eotf_ST2084(
             np.round(pq.eotf_inverse_ST2084(white["peak"][1]) * 1023) / 1023
         )
 
@@ -301,8 +301,8 @@ class ColourPrecisionAnalysis:
             return self._test_colors_linear
 
         tmp = self._test_colors_linear = pq.eotf_ST2084(self.test_colors.T / 1023)
-        clipping_mask = tmp > self.white["nits_quantized"]
-        tmp[clipping_mask] = self.white["nits_quantized"]
+        clipping_mask = tmp > self.white["luminance_quantized"]
+        tmp[clipping_mask] = self.white["luminance_quantized"]
         return self._test_colors_linear
 
     @property
@@ -423,7 +423,7 @@ class ColourPrecisionAnalysis:
     @property
     def shortname(self) -> str:
         """A short name that can be used in UI elements to identify this set of
-        tile measurements. Usually a model name and or serial number. If no user
+        display measurements. Usually a model name and or serial number. If no user
         set shortname is available in the measurement file, a quasi-unique one
         will be calculated based on the spectrometer results.
 
