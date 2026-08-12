@@ -1,0 +1,25 @@
+name: Flywheel — PR
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+concurrency:
+  group: flywheel-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  conduct:
+    # Skip drafts; ignore `edited` events from bots (only a human editing the
+    # title/body should retrigger the conventional-commit rewrite). Skips
+    # cleanly when the flywheel App credentials are absent.
+    if: |
+      vars.FLYWHEEL_GH_APP_ID != '' &&
+      github.event.pull_request.draft == false &&
+      (github.event.action != 'edited' || github.event.sender.type == 'User')
+    runs-on: ubuntu-latest
+    steps:
+      # SHA-pinned (no floating tags for third-party actions); the trailing
+      # # vX.Y.Z comment is for human review. Mirrors display-patterns.
+      - uses: point-source/flywheel@59758d1940ebe054ce9fdd4b7a7dc79a0cf235e0 # v2.1.0
+        with:
+          event: pull_request
+          app-id: ${{ vars.FLYWHEEL_GH_APP_ID }}
+          app-private-key: ${{ secrets.FLYWHEEL_GH_APP_PRIVATE_KEY }}
