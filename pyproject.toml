@@ -1,7 +1,7 @@
 [project]
-name = "ole-tools"
+name = "display-report"
 version = "0.1.0"
-description = ""
+description = "Display measurement, analysis, and fidelity reporting"
 authors = [{ name = "Unknown" }]
 requires-python = ">=3.12,<3.15"
 dependencies = [
@@ -23,9 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ole_measure = "ole.scripts.measure_display:main"
-ole_analyze = "ole.scripts.analyze_display_measurements:main"
-ole_anonymize = "ole.scripts.strip_metadata:main"
+display-report = "display_report.cli:main"
 
 [dependency-groups]
 dev = [
@@ -43,7 +41,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-bmd-signal-generator = { git = "https://github.com/OpenLEDEval/bmd-signal-gen.git", rev = "76c53490e535b10ef5a959384810780c14e1260e" }
+bmd-signal-generator = { git = "https://github.com/OpenDisplayEval/bmd-signal-gen.git", rev = "76c53490e535b10ef5a959384810780c14e1260e" }
 # PyPI 0.4.2a0 declares requires-python >=3.13,<3.14 which blocks resolution
 # on Python 3.14. The git commit relaxes it to >=3.12 and works fine on 3.14.
 # Switch to a PyPI pin once upstream publishes a release with a broader bound.
@@ -56,10 +54,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ole"]
+packages = ["display_report"]
 
 [tool.pyright]
-include = ["ole"]
+include = ["display_report"]
 pythonVersion = "3.14"
 typeCheckingMode = "standard"
 reportMissingImports = false
@@ -124,7 +122,7 @@ ignore = [
 typing-modules = ["colour.hints"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["ole"]
+known-first-party = ["display_report"]
 split-on-trailing-comma = true
 
 [tool.ruff.lint.pydocstyle]
@@ -133,9 +131,10 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ARG", "T20"]
 "tasks.py" = ["T20"]
-"ole/scripts/*" = ["T201"]
-"ole/device_info.py" = ["T201"]
-"ole/ETC/fonts/__init__.py" = ["F403"]
+"display_report/cli.py" = ["T201"]
+"display_report/scripts/*" = ["T201"]
+"display_report/device_info.py" = ["T201"]
+"display_report/fonts/__init__.py" = ["F403"]
 "*.ipynb" = ["E402"]
 
 [tool.ruff.format]

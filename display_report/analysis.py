@@ -1,7 +1,4 @@
-"""
-Defines the plotting and analysis functions for the Entertainment Technology
-Center LED Color Accuracy Report
-"""
+"""Plotting and analysis functions for the display fidelity report."""
 
 from __future__ import annotations
 
@@ -35,7 +32,7 @@ from specio.serialization import (
 if TYPE_CHECKING:
     from colour.hints import NDArrayBoolean, NDArrayFloat
 
-    from ole.device_info import DeviceInfo
+    from display_report.device_info import DeviceInfo
 
 
 @dataclass
@@ -433,7 +430,7 @@ class ColourPrecisionAnalysis:
         DeviceInfo | None
             ``None`` when the notes field contains legacy plain text.
         """
-        from ole.device_info import DeviceInfo
+        from display_report.device_info import DeviceInfo
 
         if self.metadata.notes is None or self.metadata.notes == "":
             return None
@@ -507,7 +504,7 @@ def analyze_measurements_from_file(filename: str) -> ColourPrecisionAnalysis:
     ----------
     file : str
         file location to be opened. Should be the result of one of the
-        measurement scripts in ole.
+        measurement scripts in display_report.
 
     Returns
     -------

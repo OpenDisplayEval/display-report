@@ -15,19 +15,17 @@ def main():
     from matplotlib import pyplot as plt
     from specio.serialization import CSMF_Metadata
 
-    from ole.ETC import (
+    from display_report import (
         analyze_measurements_from_file,
         generate_report_page,
     )
-    from ole.ETC.analysis import ReflectanceData
-    from ole.utilities import get_valid_filename
+    from display_report.analysis import ReflectanceData
+    from display_report.utilities import get_valid_filename
 
     program_description = """
-    Create the ETC LED Evaluation Report for a particular measurement file.
+    Create a display fidelity report for a particular measurement file.
     """
-    parser = argparse.ArgumentParser(
-        prog="ETC Display Measurements", description=program_description
-    )
+    parser = argparse.ArgumentParser(description=program_description)
 
     parser.add_argument("file", help="The input file.")
 
@@ -72,7 +70,7 @@ def main():
 
     if args.strip_details:
         data.metadata = CSMF_Metadata(software=None)
-        data.shortname = f"ETC Display Analysis - {data.shortname}"
+        data.shortname = f"Display Analysis - {data.shortname}"
 
     reflectance = (
         ReflectanceData(reflectance_45_0=args.rf_45_0, reflectance_45_45=args.rf_45_45)

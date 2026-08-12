@@ -4,7 +4,7 @@ def main():
 
     from specio.serialization import CSMF_Metadata, load_csmf_file, save_csmf_file
 
-    from ole.utilities import get_valid_filename
+    from display_report.utilities import get_valid_filename
 
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="The csmf file to strip data from")

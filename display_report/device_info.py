@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from specio.serialization import CSMF_Metadata
 
-from ole.utilities import datetime_now
+from display_report.utilities import datetime_now
 
 if TYPE_CHECKING:
     from argparse import Namespace

@@ -12,16 +12,16 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
-from ole.utilities import datetime_now
+from display_report.utilities import datetime_now
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
     from specio.common import SPDMeasurement, SpecRadiometer
 
-    from ole.test_colors import (
+    from display_report.test_colors import (
         TestColors,
     )
-    from ole.tpg_controller import TPGController
+    from display_report.tpg_controller import TPGController
 
 
 @dataclass
