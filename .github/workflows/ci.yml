@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+
+jobs:
+  # ruff and pyright are pinned to py314 in pyproject.toml, so one leg
+  # carries the full lint signal; only pytest is version-sensitive.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.14"
+      - run: uv sync --all-groups
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run pyright
+
+  spellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npx cspell "display_report/**/*" "tests/**/*" "*.md"
+
+  # pyproject declares >=3.12,<3.15, but the suite only passes on 3.14 today:
+  #
+  #   3.12  colour-specio's ResponseCode enum calls _add_value_alias_,
+  #         which does not exist before 3.13 — import fails outright.
+  #   3.13  modules without `from __future__ import annotations` evaluate
+  #         annotations eagerly and hit NameError on TYPE_CHECKING-only
+  #         imports. 3.14 hides this via PEP 649 deferred evaluation.
+  #
+  # Widen this matrix and the requires-python bound together, once fixed.
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --all-groups
+      # Measurement hardware is absent on runners. The package imports
+      # without the DeckLink SDK by design, and the suite asserts that.
+      - run: uv run pytest
