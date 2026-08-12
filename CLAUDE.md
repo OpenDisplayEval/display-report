@@ -1,8 +1,8 @@
-# CLAUDE.md — OLE-Toolset
+# CLAUDE.md — display-report
 
 ## Project overview
 
-OLE-Toolset (OpenLEDEval Toolset) is a display measurement and analysis toolkit
+display-report is a display measurement and analysis toolkit
 for LED/OLED display evaluation. It provides command-line tools for driving test
 pattern generators, capturing spectroradiometer measurements, and analyzing the
 resulting data to produce reports.
@@ -26,15 +26,19 @@ uv run invoke clean           # Remove __pycache__, .pytest_cache, .ruff_cache
 ## Development guidelines
 
 - **DRY**: Do not repeat yourself. Reuse existing utilities from
-  `ole.utilities`.
+  `display_report.utilities`.
 - **Docstrings**: Use NumPy-style docstrings for all public functions and
   classes.
 - **Type hints**: All function signatures must have type annotations.
 - **Always use `uv run`**: Never invoke tools directly; always prefix with
   `uv run`.
 - **Formatting**: ruff handles both linting and formatting (line length 88).
-- **Imports**: ruff handles import sorting; `ole` is a known first-party
-  package.
+- **Imports**: ruff handles import sorting; `display_report` is a known
+  first-party package.
+- **Public API**: `display_report/__init__.py` resolves exports lazily (PEP
+  562). Add new public names to `_EXPORTS` and to the `TYPE_CHECKING` re-export
+  block. Never import `tpg_controller` at package import time — it pulls in
+  `bmd_sg`, which loads `libdecklink.dylib`.
 
 ## Documentation style
 
@@ -57,21 +61,33 @@ Diataxis (docs.divio.com).
 
 ## Entry points
 
-| Command         | Module                                          | Description                                       |
-| --------------- | ----------------------------------------------- | ------------------------------------------------- |
-| `ole_measure`   | `ole.scripts.measure_display:main`              | Drive TPG + spectroradiometer for measurements    |
-| `ole_analyze`   | `ole.scripts.analyze_display_measurements:main` | Analyze measurement data and generate reports     |
-| `ole_anonymize` | `ole.scripts.strip_metadata:main`               | Strip identifying metadata from measurement files |
+A single console script, `display-report`, dispatches to subcommands via
+`display_report.cli:main`.
+
+| Command                    | Module                                          | Description                                       |
+| -------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| `display-report measure`   | `display_report.scripts.measure_display`         | Drive TPG + spectroradiometer for measurements    |
+| `display-report analyze`   | `display_report.scripts.analyze_display_measurements` | Analyze measurement data and generate reports |
+| `display-report anonymize` | `display_report.scripts.strip_metadata`          | Strip identifying metadata from measurement files |
+
+Each subcommand module owns its own `argparse` parser and exposes `main()`. Do
+not set `prog=` — the dispatcher sets `sys.argv[0]` so help text reads
+`display-report <command>`.
 
 ## Package structure
 
-- `ole/` — Main package
-  - `scripts/` — CLI entry points
-  - `ETC/` — Analysis and PDF report generation
+- `display_report/` — Main package
+  - `__init__.py` — Lazy public API
+  - `cli.py` — Subcommand dispatcher
+  - `scripts/` — Subcommand implementations
+  - `analysis.py` — Colorimetric analysis
+  - `pdf.py` — Report page rendering
+  - `fonts/` — Bundled Anuphan typeface
   - `utilities.py` — Shared helper functions
   - `measurement_controllers.py` — Spectroradiometer control
-  - `tpg_controller.py` — Test pattern generator control
+  - `tpg_controller.py` — Test pattern generator control (requires DeckLink SDK)
   - `test_colors.py` — Test colour definitions
+  - `device_info.py` — Structured device metadata
 
 ## Error handling
 

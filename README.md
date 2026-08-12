@@ -1,6 +1,6 @@
-# OLE-Toolset (OpenLEDEval Toolset)
+# display-report
 
-OLE-Toolset measures displays and produces a standardized, open-source fidelity
+display-report measures displays and produces a standardized, open-source fidelity
 report. It sends hundreds of known code values to a display, captures the
 resulting light output with a spectroradiometer, and compares the two to
 quantify reproduction accuracy.
@@ -8,7 +8,7 @@ quantify reproduction accuracy.
 ## Where this fits
 
 LED display calibration is a complex, per-pixel process handled by LED
-processors. OLE-Toolset does not calibrate — it
+processors. display-report does not calibrate — it
 **reports on the results** of that vendor calibration. The more accurate a display's
 native calibration is, the easier it is for downstream tools to
 build on top of it — creative LUTs, colour space transforms, and camera-match
@@ -22,7 +22,7 @@ EOTF, holds a neutral grey scale, or reproduces colours accurately inside the
 gamut boundary. The numbers are best-case snapshots, not distributions, and they
 are not independently verifiable.
 
-OLE-Toolset's report format is open source. The metrics it presents, the
+display-report's report format is open source. The metrics it presents, the
 visualizations it uses, the tolerance thresholds it applies, and the way it
 surfaces information to non-specialist readers are all visible in the codebase.
 Anyone can review those design choices, propose improvements, or adapt the
@@ -124,11 +124,11 @@ acceptable.
 ## Quick start
 
 ```bash
-git clone https://github.com/OpenLEDEval/OLE-Toolset.git
-cd OLE-Toolset
+git clone https://github.com/OpenDisplayEval/display-report.git
+cd display-report
 uv sync
-uv run ole_measure --max-luminance 1500 --bit-depth 10 --save-directory ./measurements
-uv run ole_analyze ./measurements/<file>.csmf
+uv run display-report measure --max-luminance 1500 --bit-depth 10 --save-directory ./measurements
+uv run display-report analyze ./measurements/<file>.csmf
 ```
 
 See [USAGE.md](USAGE.md) for hardware setup, full CLI reference, and development
