@@ -6,10 +6,31 @@ import logging
 import re
 import sys
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError, version
 
 BASE_LOGGER_NAME = "display_report"
+DISTRIBUTION_NAME = "display-report"
 
-__all__ = ["get_logger", "get_valid_filename"]
+__all__ = ["get_logger", "get_valid_filename", "tool_identifier"]
+
+
+def tool_identifier() -> str:
+    """Name and version of this tool, for measurement-file provenance.
+
+    Written to ``CSMF_Metadata.software`` and shown on the report header so a
+    result can be traced back to the code that produced it. The version comes
+    from git tags via hatch-vcs.
+
+    Returns
+    -------
+    str
+        For example ``"display-report 0.2.1"``.
+    """
+    try:
+        return f"{DISTRIBUTION_NAME} {version(DISTRIBUTION_NAME)}"
+    except PackageNotFoundError:
+        # Running from a source tree that was never installed.
+        return f"{DISTRIBUTION_NAME} unknown-version"
 
 
 class SuspiciousFileOperationError(Exception):

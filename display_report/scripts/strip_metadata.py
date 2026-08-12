@@ -4,7 +4,7 @@ def main():
 
     from specio.serialization import CSMF_Metadata, load_csmf_file, save_csmf_file
 
-    from display_report.utilities import get_valid_filename
+    from display_report.utilities import get_valid_filename, tool_identifier
 
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="The csmf file to strip data from")
@@ -18,7 +18,9 @@ def main():
 
     output_path = file_path.parent if args.out_dir is None else Path(args.out_dir)
 
-    file_data.metadata = CSMF_Metadata(software="colour-workbench file stripper")
+    # Identifying fields are dropped; the tool version is kept, since it
+    # identifies the code rather than the measurement subject.
+    file_data.metadata = CSMF_Metadata(software=tool_identifier())
 
     output_path = output_path.joinpath(
         get_valid_filename(file_data.shortname)

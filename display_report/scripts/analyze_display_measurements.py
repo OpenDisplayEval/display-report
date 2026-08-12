@@ -19,7 +19,7 @@ def main():
         render_report_pdf,
     )
     from display_report.analysis import ReflectanceData
-    from display_report.utilities import get_valid_filename
+    from display_report.utilities import get_valid_filename, tool_identifier
 
     program_description = """
     Create a display fidelity report for a particular measurement file.
@@ -68,7 +68,7 @@ def main():
     data = analyze_measurements_from_file(str(in_file))
 
     if args.strip_details:
-        data.metadata = CSMF_Metadata(software=None)
+        data.metadata = CSMF_Metadata(software=tool_identifier())
         data.shortname = f"Display Analysis - {data.shortname}"
 
     reflectance = (

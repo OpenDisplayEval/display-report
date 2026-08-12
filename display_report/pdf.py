@@ -29,6 +29,7 @@ from matplotlib.patches import Polygon
 from sklearn.cluster import KMeans
 
 from display_report.fonts import Anuphan
+from display_report.utilities import tool_identifier
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -639,6 +640,18 @@ def plot_report_header(ax: Axes, data: ColourPrecisionAnalysis):
     """
     ax.set_ylim(0, 1)
     ax.set_axis_off()
+
+    # Provenance: tolerances and metrics change between versions, so a report
+    # states which build produced it.
+    ax.text(
+        1,
+        0.15,
+        tool_identifier(),
+        va="bottom",
+        ha="right",
+        fontsize=8,
+        color="0.4",
+    )
 
     info = data.device_info
     if info is None:

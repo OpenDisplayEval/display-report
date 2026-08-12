@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from specio.serialization import CSMF_Metadata
 
-from display_report.utilities import datetime_now
+from display_report.utilities import datetime_now, tool_identifier
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -69,7 +69,7 @@ class DeviceInfo:
 
     def to_metadata(self) -> CSMF_Metadata:
         """Wrap into a ``CSMF_Metadata`` instance."""
-        return CSMF_Metadata(notes=self.to_notes_string())
+        return CSMF_Metadata(notes=self.to_notes_string(), software=tool_identifier())
 
     @classmethod
     def from_notes_string(cls, notes: str) -> DeviceInfo | None:
@@ -173,12 +173,13 @@ def resolve_device_metadata(args: Namespace) -> CSMF_Metadata:
     CSMF_Metadata
     """
     if args.device_name is not None:
-        return CSMF_Metadata(notes=args.device_name)
+        return CSMF_Metadata(notes=args.device_name, software=tool_identifier())
 
     if sys.stdin.isatty():
         device_info = run_device_wizard()
         return device_info.to_metadata()
 
     return CSMF_Metadata(
-        notes=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M")
+        notes=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M"),
+        software=tool_identifier(),
     )
