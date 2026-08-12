@@ -1,11 +1,15 @@
-"""Tests for ole.device_info module."""
+"""Tests for display_report.device_info module."""
 
 from __future__ import annotations
 
 from argparse import Namespace
 from unittest.mock import patch
 
-from ole.device_info import DeviceInfo, resolve_device_metadata, run_device_wizard
+from display_report.device_info import (
+    DeviceInfo,
+    resolve_device_metadata,
+    run_device_wizard,
+)
 
 
 class TestDeviceInfoRoundTrip:
@@ -111,7 +115,7 @@ class TestResolveDeviceMetadata:
         args = Namespace(device_name=None)
         with (
             patch("sys.stdin") as mock_stdin,
-            patch("ole.device_info.run_device_wizard") as mock_wizard,
+            patch("display_report.device_info.run_device_wizard") as mock_wizard,
         ):
             mock_stdin.isatty.return_value = False
             resolve_device_metadata(args)
@@ -122,7 +126,9 @@ class TestResolveDeviceMetadata:
         fake_info = DeviceInfo(led_processor="TestProc", led_panel="TestPanel")
         with (
             patch("sys.stdin") as mock_stdin,
-            patch("ole.device_info.run_device_wizard", return_value=fake_info),
+            patch(
+                "display_report.device_info.run_device_wizard", return_value=fake_info
+            ),
         ):
             mock_stdin.isatty.return_value = True
             meta = resolve_device_metadata(args)
@@ -133,7 +139,7 @@ class TestResolveDeviceMetadata:
         args = Namespace(device_name="My Display")
         with (
             patch("sys.stdin") as mock_stdin,
-            patch("ole.device_info.run_device_wizard") as mock_wizard,
+            patch("display_report.device_info.run_device_wizard") as mock_wizard,
         ):
             mock_stdin.isatty.return_value = True
             meta = resolve_device_metadata(args)

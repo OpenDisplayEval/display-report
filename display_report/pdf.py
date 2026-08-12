@@ -1,4 +1,4 @@
-"""PDF generation for Entertainment Technology Center LED Eval Report"""
+"""PDF generation for the display fidelity report."""
 
 import importlib
 import importlib.resources
@@ -22,7 +22,7 @@ from matplotlib import rcParams
 from matplotlib.patches import Polygon
 from sklearn.cluster import KMeans
 
-from ole.ETC.fonts import Anuphan
+from display_report.fonts import Anuphan
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from matplotlib.gridspec import SubplotSpec
     from matplotlib.image import AxesImage
 
-    from ole.ETC.analysis import (
+    from display_report.analysis import (
         ColourPrecisionAnalysis,
         ReflectanceData,
     )
@@ -761,7 +761,7 @@ def generate_report_page(
     rcParams["font.family"] = ["Anuphan", *rcParams["font.family"]]
 
     fig = plt.figure(
-        "ETC LED Report",
+        "Display Fidelity Report",
         figsize=np.asarray((8.5, 11)),
         facecolor=(1, 1, 1),
         constrained_layout=True,

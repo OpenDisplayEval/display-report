@@ -4,7 +4,7 @@ Implements control of a Blackmagic DeckLink device for test pattern generation.
 Uses the bmd-signal-gen library to drive the DeckLink card directly, bypassing
 OS/GPU colour management for deterministic signal output.
 
-See https://github.com/OpenLEDEval/bmd-signal-gen
+See https://github.com/OpenDisplayEval/bmd-signal-gen
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import bmd_sg
 import numpy as np
 
-from ole.utilities import get_logger
+from display_report.utilities import get_logger
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike

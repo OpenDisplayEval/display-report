@@ -1,5 +1,5 @@
 """
-OpenLEDEval (ole) utilities
+display-report utilities
 """
 
 import logging
@@ -7,7 +7,7 @@ import re
 import sys
 from datetime import datetime
 
-BASE_LOGGER_NAME = "ole"
+BASE_LOGGER_NAME = "display_report"
 
 __all__ = ["get_logger", "get_valid_filename"]
 
@@ -43,13 +43,13 @@ def get_valid_filename(name: str) -> str:
 
 
 def get_logger(name: str = "") -> logging.Logger:
-    """Create a logger for the ole module
+    """Create a logger for the display_report package
 
     Parameters
     ----------
     name : str, default ""
-        Names a sub-logger for level management. Default "" returns base logger
-        for ole
+        Names a sub-logger for level management. Default "" returns the base
+        logger for display_report
 
     Returns
     -------

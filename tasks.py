@@ -37,7 +37,7 @@ def typecheck(ctx: Context) -> None:
 @task
 def spellcheck(ctx: Context) -> None:
     """Run cspell spell checker."""
-    ctx.run('npx cspell "ole/**/*" "tests/**/*" "*.md"', pty=True)
+    ctx.run('npx cspell "display_report/**/*" "tests/**/*" "*.md"', pty=True)
 
 
 @task

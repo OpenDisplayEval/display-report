@@ -18,18 +18,18 @@ def main():
     from specio.serialization import CSMF_Data, save_csmf_file
     from specio.spectrometers import VirtualSpectrometer
 
-    from ole.device_info import resolve_device_metadata
-    from ole.ETC.analysis import ColourPrecisionAnalysis
-    from ole.measurement_controllers import (
+    from display_report.analysis import ColourPrecisionAnalysis
+    from display_report.device_info import resolve_device_metadata
+    from display_report.measurement_controllers import (
         DisplayMeasureController,
         ProgressPrinter,
     )
-    from ole.test_colors import (
+    from display_report.test_colors import (
         PQ_TestColorsConfig,
         generate_colors,
     )
-    from ole.tpg_controller import TPGController
-    from ole.utilities import datetime_now
+    from display_report.tpg_controller import TPGController
+    from display_report.utilities import datetime_now
 
     program_description = """
     Analyze a display for colorimetric linearity and accuracy. This program does
@@ -45,9 +45,7 @@ def main():
 
     This program will try to automatically discover a connected CR-300 / CR-250
     """
-    parser = argparse.ArgumentParser(
-        prog="ETC Display Measurements", description=program_description
-    )
+    parser = argparse.ArgumentParser(description=program_description)
 
     parser.add_argument(
         "--device-index",
@@ -205,7 +203,7 @@ def main():
         "--device-name",
         help=(
             "A name / metadata string that will be embedded in the file. Used "
-            "later to determine the header of the ETC Calibration Precision "
+            "later to determine the header of the fidelity report. "
             "Report. When omitted on an interactive terminal, the device info "
             "wizard prompts for structured details instead."
         ),
