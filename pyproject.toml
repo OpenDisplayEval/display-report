@@ -1,6 +1,7 @@
 [project]
 name = "display-report"
-version = "0.1.0"
+# Version derives from git tags (hatch-vcs); flywheel cuts the tags.
+dynamic = ["version"]
 description = "Display measurement, analysis, and fidelity reporting"
 authors = [{ name = "Unknown" }]
 requires-python = ">=3.12,<3.15"
@@ -50,8 +51,11 @@ colour-specio = { git = "https://github.com/colour-science/colour-specio.git", r
 [tool.uv]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["display_report"]
