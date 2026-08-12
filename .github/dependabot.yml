@@ -1,0 +1,44 @@
+# Dependabot keeps uv.lock and the matching pins in pyproject.toml current.
+#
+# Commit prefixes are chosen to interoperate with flywheel, which auto-merges
+# only the conventional types listed in .flywheel.yml (fix, chore, docs) and
+# derives releases from them:
+#
+#   fix(deps)        runtime dependency moved -> auto-merge, cuts a patch release
+#   chore(deps-dev)  dev tooling moved        -> auto-merge, no release
+#
+# `build` is the more literal conventional type for a dependency bump, but it
+# is absent from flywheel's auto_merge list, so those PRs would sit unmerged.
+# Change prefix to "chore" if runtime bumps should never cut a release.
+#
+# These prefixes also apply to Dependabot *security* PRs. Do not add
+# `target-branch` — security updates always target the default branch, and
+# setting it silently stops this config from affecting them.
+
+version: 2
+
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      # Majors land as individual PRs; the rest batch into one.
+      uv-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns: ["*"]
