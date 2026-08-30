@@ -1,0 +1,12 @@
+extends: existence
+message: "Filler phrase '%s' — cut it."
+ignorecase: true
+level: warning
+scope: sentence
+tokens:
+  - 'it should be noted that'
+  - 'in order to'
+  - 'due to the fact that'
+  - 'it is important to note'
+  - 'at this point in time'
+  - 'for the purpose of'

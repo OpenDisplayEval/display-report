@@ -1,0 +1,7 @@
+extends: existence
+message: "Heading '%s' is numbered in prose. If the number is document structure, address by §slug instead; if it describes the system, keep it."
+level: warning
+scope: heading
+nonword: true
+tokens:
+  - '^(Stage|Phase|Step|Part|Pass|Round|Tier|Level|Iteration)\s+([0-9]+[a-z]?|[IVXivx]+)\b'

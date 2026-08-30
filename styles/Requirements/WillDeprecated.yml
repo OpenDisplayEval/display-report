@@ -1,0 +1,7 @@
+extends: existence
+message: "'%s' is deprecated by IEEE for requirements. Use 'shall' for mandatory, 'should' for recommended."
+ignorecase: true
+level: warning
+scope: sentence
+tokens:
+  - '\bwill\b'

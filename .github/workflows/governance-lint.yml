@@ -1,0 +1,14 @@
+name: Governance Lint
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # The job key is the status-check context prefix: this reports as
+  # `governance / lint`, which is the name the `Flywheel - review` ruleset
+  # requires. It was `lint`, so the emitted context was `lint / lint` and the
+  # required one sat unreported forever. Keep it `governance` — renaming it
+  # silently re-blocks the branch.
+  governance:
+    uses: repentsinner/symphonize/.github/workflows/governance-lint.yml@notation--v0
