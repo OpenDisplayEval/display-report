@@ -219,8 +219,15 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
         contract.eotf(np.arange(0, peak_code) / peak_code),
         color=[1, 0, 0],
     )
-    ax.set_title("PQ EOTF Performance")
-    ax.set_xlabel("10-bit Code Value (Log)")
+    # An axis labelled "10-bit" under a 12-bit session is a false statement
+    # about the measurement, printed on the artifact a human judges from
+    # (§spec:report-rendering). Both follow the declared contract.
+    if contract.transfer_function == "gamma":
+        transfer_name = f"Gamma {contract.gamma_value:g}"
+    else:
+        transfer_name = contract.transfer_function.upper()
+    ax.set_title(f"{transfer_name} EOTF Performance")
+    ax.set_xlabel(f"{contract.bit_depth}-bit Code Value (Log)")
     ax.set_ylabel("Luminance — cd/m² (nits), Log")
 
     max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
