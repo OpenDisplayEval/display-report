@@ -1,0 +1,7 @@
+extends: existence
+message: "'%s' is deprecated by IEEE. Use 'shall' for mandatory requirements."
+ignorecase: true
+level: error
+scope: sentence
+tokens:
+  - '\bmust\b'
