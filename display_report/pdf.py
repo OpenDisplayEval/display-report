@@ -1,5 +1,11 @@
 """PDF generation for the display fidelity report."""
 
+# Annotations here name types imported only under TYPE_CHECKING. Without
+# this, they evaluate at def time and the module is unimportable on any
+# Python below 3.14 — where PEP 649 defers them and hides the breakage.
+# This package supports 3.12 upward.
+from __future__ import annotations
+
 import importlib
 import importlib.resources
 import io
