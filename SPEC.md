@@ -118,7 +118,7 @@ discriminate — is specified in `§spec:report-metrics`.
 
 ## Programmatic surface §spec:report-api
 
-*Status: not started*
+*Status: complete*
 
 Analysis and rendering are importable: a caller supplies a file path
 and receives the analysis, and supplies the analysis and receives the

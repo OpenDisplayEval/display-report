@@ -55,21 +55,3 @@ names the protocol and transfer function it was measured under; a file
 declaring an unimplemented contract is refused by name; a hybrid
 file's reconstructed rows are named and excluded from analyses needing
 a measured spectrum.
-
-## Report surface §road:report-surface
-
-What the operator UI calls. The browser generates the report from a
-loaded artifact (`§spec:web-ui`), and the consuming half lives in
-color-wrangler (`§road:ui-report` there).
-
-### Render the report to bytes §road:report-to-bytes
-
-Add the importable surface returning the rendered report as PDF bytes
-for a caller that supplies an analysis, in `display_report/pdf.py` and
-`display_report/__init__.py`, and reduce
-`display_report/scripts/analyze_display_measurements.py` to a caller
-of it. §spec:report-api.
-
-**Verify:** an in-process caller produces report bytes from a file
-path with no subprocess and no temporary file it did not choose;
-`display-report analyze` writes the same bytes for the same input.

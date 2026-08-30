@@ -2,6 +2,7 @@
 
 import importlib
 import importlib.resources
+import io
 from typing import TYPE_CHECKING
 
 import matplotlib
@@ -801,3 +802,42 @@ def generate_report_page(
 
     plt.show(block=False)
     return fig
+
+
+def render_report_pdf(
+    color_data: ColourPrecisionAnalysis,
+    reflectance_data: ReflectanceData | None = None,
+) -> bytes:
+    """Render the report page and return it as PDF bytes.
+
+    The in-process surface behind `display-report analyze`
+    (SPEC.md §spec:report-api). A caller holding an analysis gets the
+    report without a subprocess, a temporary file it did not choose, or a
+    path to scrape for failures.
+
+    Parameters
+    ----------
+    color_data : ColourPrecisionAnalysis
+        The analysis to report on.
+    reflectance_data : ReflectanceData | None, optional
+        Reflectance data, measured separately from the colour precision
+        data, by default None.
+
+    Returns
+    -------
+    bytes
+        The report as a PDF document.
+    """
+    figure = generate_report_page(
+        color_data=color_data, reflectance_data=reflectance_data
+    )
+    # pyplot holds every figure it creates, so a server rendering report
+    # after report grows without bound unless each one is closed. The
+    # close belongs in a finally: a failed render leaks just as well.
+    try:
+        buffer = io.BytesIO()
+        figure.savefig(buffer, format="pdf", facecolor=(1, 1, 1))
+    finally:
+        plt.close(figure)
+
+    return buffer.getvalue()
