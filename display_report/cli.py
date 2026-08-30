@@ -1,7 +1,7 @@
 """Command-line entry point.
 
 Dispatches ``display-report <command>`` to the matching script module. Each
-command owns its own argument parser, so ``display-report measure --help``
+command owns its own argument parser, so ``display-report analyze --help``
 shows that command's options.
 """
 
@@ -15,10 +15,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 COMMANDS: dict[str, tuple[str, str]] = {
-    "measure": (
-        "display_report.scripts.measure_display",
-        "Drive the pattern generator and spectroradiometer to capture measurements",
-    ),
     "analyze": (
         "display_report.scripts.analyze_display_measurements",
         "Analyze a .csmf measurement file and write a PDF fidelity report",

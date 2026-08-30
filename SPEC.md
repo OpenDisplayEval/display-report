@@ -8,7 +8,7 @@ repository's SPEC.md.
 
 ## Scope §spec:scope
 
-*Status: in progress*
+*Status: complete*
 
 display-report reads a measurement file and reports on it. It opens no
 serial port and no DeckLink, imports no device driver, and needs no
