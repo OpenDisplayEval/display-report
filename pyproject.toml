@@ -6,7 +6,6 @@ description = "Display measurement, analysis, and fidelity reporting"
 authors = [{ name = "Unknown" }]
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "bmd-signal-generator",
     "colour-science>=0.4.7,<0.5",
     "colour-datasets>=0.2.7,<0.3",
     "colour-specio",
@@ -18,8 +17,6 @@ dependencies = [
     "pandas>=2.2.0,<3",
     "opencv-python>=4.8.1.78,<5",
     "pymoo>=0.6.1.1,<0.7",
-    "telnetlib3>=2.0.4,<3",
-    "exscript>=2.6.28,<3",
     "questionary>=2.1.1",
 ]
 
@@ -42,7 +39,6 @@ dev = [
 ]
 
 [tool.uv.sources]
-bmd-signal-generator = { git = "https://github.com/OpenDisplayEval/bmd-signal-gen.git", rev = "76c53490e535b10ef5a959384810780c14e1260e" }
 # PyPI 0.4.2a0 declares requires-python >=3.13,<3.14 which blocks resolution
 # on Python 3.14. The git commit relaxes it to >=3.12 and works fine on 3.14.
 # Switch to a PyPI pin once upstream publishes a release with a broader bound.
