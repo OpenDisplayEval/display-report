@@ -16,6 +16,10 @@ _EXPORTS = {
     "analyze_measurements_from_file": "display_report.analysis",
     "generate_report_page": "display_report.pdf",
     "render_report_pdf": "display_report.pdf",
+    "SignalContract": "display_report.provenance",
+    "ProvenanceError": "display_report.provenance",
+    "read_provenance": "display_report.provenance",
+    "contract_from": "display_report.provenance",
 }
 
 __all__ = sorted(_EXPORTS)
@@ -52,3 +56,7 @@ if TYPE_CHECKING:
     )
     from display_report.pdf import generate_report_page as generate_report_page
     from display_report.pdf import render_report_pdf as render_report_pdf
+    from display_report.provenance import ProvenanceError as ProvenanceError
+    from display_report.provenance import SignalContract as SignalContract
+    from display_report.provenance import contract_from as contract_from
+    from display_report.provenance import read_provenance as read_provenance
