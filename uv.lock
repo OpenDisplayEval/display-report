@@ -402,7 +402,7 @@ wheels = [
 [[package]]
 name = "colour-specio"
 version = "0.4.2a0"
-source = { git = "https://github.com/colour-science/colour-specio.git?rev=492e261e#492e261e3176311e0e1d4c82bb2199c1a9fd16ae" }
+source = { git = "https://github.com/repentsinner/colour-specio?rev=981d48627c7b2a02e14897500fa1a67da8f61c8a#981d48627c7b2a02e14897500fa1a67da8f61c8a" }
 dependencies = [
     { name = "aenum" },
     { name = "bidict" },
@@ -585,7 +585,7 @@ dev = [
 requires-dist = [
     { name = "colour-datasets", specifier = ">=0.2.7,<0.3" },
     { name = "colour-science", specifier = ">=0.4.7,<0.5" },
-    { name = "colour-specio", git = "https://github.com/colour-science/colour-specio.git?rev=492e261e" },
+    { name = "colour-specio", git = "https://github.com/repentsinner/colour-specio?rev=981d48627c7b2a02e14897500fa1a67da8f61c8a" },
     { name = "matplotlib", specifier = ">=3.7.1,<4" },
     { name = "numpy", specifier = ">=2.3.1,<3" },
     { name = "opencv-python", specifier = ">=4.8.1.78,<5" },

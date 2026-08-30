@@ -41,7 +41,7 @@ Not owned here: instrument and signal-generator access
 
 ## Report input §spec:report-input
 
-*Status: not started*
+*Status: complete*
 
 The report's input is one file: the measurement seam file
 (`§spec:measurement-seam`), carrying the measurements, the spectra
@@ -67,7 +67,7 @@ and why, rather than treating a scaled estimate as a measurement.
 
 ## Contract-driven analysis §spec:contract-analysis
 
-*Status: not started*
+*Status: complete*
 
 Transfer function and bit depth come from the file's declared signal
 contract. Neither is hardcoded, and neither is inferred from the data.
@@ -99,7 +99,7 @@ fixed transfer function, quieter.
 
 ## Report rendering §spec:report-rendering
 
-*Status: not started*
+*Status: complete*
 
 The report is a rendered page whose plots are parameterized by the
 declared contract: transfer-function axes, their tick placement, and

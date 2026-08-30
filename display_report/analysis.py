@@ -20,7 +20,6 @@ from colour.models.cie_luv import Luv_to_uv, XYZ_to_Luv
 from colour.models.cie_xyy import XYZ_to_xy, xy_to_XYZ
 from colour.models.rgb.derivation import normalised_primary_matrix
 from colour.models.rgb.ictcp import XYZ_to_ICtCp
-from colour.models.rgb.transfer_functions import st_2084 as pq
 from colour.plotting.common import XYZ_to_plotting_colourspace
 from colour.temperature.ohno2013 import XYZ_to_CCT_Ohno2013
 from specio.serialization import (
@@ -68,8 +67,69 @@ class ReflectanceData:
 
 class ColourPrecisionAnalysis:
     """Analyze a measurement list for various colorimetric properties, like
-    dE2000 and dE ITP. Assuming PQ encoded test patterns.
+    dE2000 and dE ITP.
+
+    The transfer function and bit depth come from the file's declared
+    signal contract (SPEC.md §spec:contract-analysis), never from an
+    assumption. Rows carrying no measured spectrum -- a disciplined
+    session reads its dark end with a colorimeter, and a colorimeter has
+    none -- are judged on the tristimulus they do carry, and named in
+    `rows_without_spectra`.
     """
+
+    @property
+    def _spectral_mask(self) -> NDArrayBoolean:
+        """Rows carrying a spectrum.
+
+        A colorimeter reading has none at all, so every spectral
+        computation runs over this subset and says so, rather than
+        treating absence as zero (§spec:report-input).
+        """
+        if hasattr(self, "_spectral_mask_cache"):
+            return self._spectral_mask_cache
+
+        self._spectral_mask_cache = np.array(
+            [hasattr(m, "spd") for m in self._data.measurements], dtype=bool
+        )
+        return self._spectral_mask_cache
+
+    @property
+    def rows_without_spectra(self) -> npt.NDArray:
+        """Indices of rows an analysis needing a spectrum has to exclude."""
+        return np.flatnonzero(~self._spectral_mask)
+
+    @property
+    def provenance(self) -> dict:
+        """The artifact's canonical projection, verified against its digest."""
+        if not hasattr(self, "_provenance_cache"):
+            from display_report.provenance import read_provenance
+
+            self._provenance_cache = read_provenance(self._data)
+        return self._provenance_cache
+
+    @property
+    def contract(self):
+        """The signal contract this file was measured under.
+
+        Read from the file's provenance block where it has one. A file
+        without one -- the reference format, or a third party's -- falls
+        back to what that format assumed, PQ at ten bits, and the contract
+        records that it was assumed rather than declared
+        (§spec:contract-analysis). Silence is the failure mode this seam
+        exists to remove, so the fallback is announced, not hidden.
+        """
+        if not hasattr(self, "_contract_cache"):
+            from display_report.provenance import (
+                ASSUMED_CONTRACT,
+                ProvenanceError,
+                contract_from,
+            )
+
+            try:
+                self._contract_cache = contract_from(self.provenance)
+            except ProvenanceError:
+                self._contract_cache = ASSUMED_CONTRACT
+        return self._contract_cache
 
     @property
     def _snr_mask(self) -> NDArrayBoolean:
@@ -79,23 +139,44 @@ class ColourPrecisionAnalysis:
         -------
         NDArrayBoolean
         """
+        keep = np.ones(len(self._data.measurements), dtype=bool)
+
+        # The noise floor is derived from the spread of the black readings'
+        # spectra. A disciplined session routes black to a colorimeter, which
+        # has none, and a session whose black readings are identical has a
+        # spread of zero -- either way there is no floor to compare against.
+        # Skipping the filter keeps every row; deriving it from nothing would
+        # divide by zero and reject all of them.
+        black_spectral = [m for m in self.black["measurements"] if hasattr(m, "spd")]
+        if self.black.get("spd") is None or not black_spectral:
+            return keep
+
         noise = np.mean(
             np.max(
                 np.sum(
-                    [m.spd.values for m in self.black["measurements"]]
-                    - self.black["spd"].values,
+                    [m.spd.values for m in black_spectral] - self.black["spd"].values,
                     axis=1,
                 ),
                 0,
             )
         )
-        snr = 10 * np.log10(
-            np.asarray(
-                [max(m.power - self.black["power"], 0) for m in self._data.measurements]
-            )
-            / noise
+        if not np.isfinite(noise) or noise <= 0:
+            return keep
+
+        power = np.asarray(
+            [
+                max(getattr(m, "power", 0.0) - (self.black["power"] or 0.0), 0)
+                if hasattr(m, "spd")
+                else np.inf
+                for m in self._data.measurements
+            ]
         )
-        return snr > 3
+        with np.errstate(divide="ignore", invalid="ignore"):
+            snr = 10 * np.log10(power / noise)
+        # A row without a spectrum has no power to compare; it is kept on the
+        # strength of its tristimulus rather than filtered on a figure it
+        # cannot produce.
+        return np.where(np.isnan(snr), True, snr > 3)
 
     @property
     def _analysis_mask(self) -> NDArrayBoolean:
@@ -109,16 +190,18 @@ class ColourPrecisionAnalysis:
         if hasattr(self, "_analysis_mask_cache"):
             return self._analysis_mask_cache
 
+        # Every row is judged on its tristimulus; a row is judged on its
+        # spectrum only if it has one (§spec:report-input).
+        finite_spectrum = np.array(
+            [
+                bool(np.all(np.isfinite(m.spd.values))) if hasattr(m, "spd") else True
+                for m in self._data.measurements
+            ],
+            dtype=bool,
+        )
         t = np.all(
             (
-                ~np.any(
-                    np.isinf([m.spd.values for m in self._data.measurements]),
-                    axis=1,
-                ),
-                ~np.any(
-                    np.isnan([m.spd.values for m in self._data.measurements]),
-                    axis=1,
-                ),
+                finite_spectrum,
                 ~np.any(np.isnan([m.XYZ for m in self._data.measurements]), axis=1),
                 ~np.any(np.isinf([m.XYZ for m in self._data.measurements]), axis=1),
             ),
@@ -145,18 +228,35 @@ class ColourPrecisionAnalysis:
 
         tmp = self._black = {}
         tmp["measurements"] = measurements = self._data.measurements[mask]
-        spd_shape = measurements[0].spd.shape
 
-        tmp["values"] = np.transpose(np.array([m.spd.values for m in measurements]))
-        tmp["spectral_stddev"] = np.std(tmp["values"], axis=1)
-        tmp["power_stddev"] = np.std([m.power for m in measurements])
+        # A disciplined session reads its dark end with a colorimeter
+        # (§spec:spectral-retention), so the black rows are exactly the ones
+        # most likely to carry no spectrum. Black's tristimulus is measured
+        # either way; the spectral fields are only available when a black
+        # row carried a spectrum, and are None rather than zero when not --
+        # a zero here would read as a perfectly black display.
+        spectral = [m for m in measurements if hasattr(m, "spd")]
 
-        tmp["spd"] = np.mean(tmp["values"], axis=1)
-        tmp["spd"] = savgol_filter(tmp["spd"], 5, 2, mode="nearest")
-        tmp["spd"] = SpectralDistribution(np.asarray(tmp["spd"]), domain=spd_shape)
+        if spectral:
+            spd_shape = spectral[0].spd.shape
+            tmp["values"] = np.transpose(np.array([m.spd.values for m in spectral]))
+            tmp["spectral_stddev"] = np.std(tmp["values"], axis=1)
+            tmp["power_stddev"] = np.std([m.power for m in spectral])
 
-        tmp["XYZ"] = sd_to_XYZ(SpectralDistribution(tmp["spd"], spd_shape), k=683)
-        tmp["power"] = np.sum(tmp["spd"].values)
+            smoothed = savgol_filter(
+                np.mean(tmp["values"], axis=1), 5, 2, mode="nearest"
+            )
+            tmp["spd"] = SpectralDistribution(np.asarray(smoothed), domain=spd_shape)
+            tmp["XYZ"] = sd_to_XYZ(SpectralDistribution(tmp["spd"], spd_shape), k=683)
+            tmp["power"] = float(np.sum(tmp["spd"].values))
+        else:
+            tmp["values"] = None
+            tmp["spectral_stddev"] = None
+            tmp["power_stddev"] = None
+            tmp["spd"] = None
+            tmp["power"] = None
+            tmp["XYZ"] = np.mean([m.XYZ for m in measurements], axis=0)
+
         return self._black
 
     @property
@@ -217,6 +317,15 @@ class ColourPrecisionAnalysis:
         )
         grey_mask = grey_mask & self._analysis_mask
 
+        # Black is the reference every level is measured against, not a
+        # level that tracks. Subtracting it from itself leaves no light and
+        # therefore no chromaticity -- a CCT of six figures at a Duv of 0.3,
+        # which drags the whitepoint plot's limits with it. It used to fall
+        # out here incidentally, filtered by a signal-to-noise ratio derived
+        # from its own spectrum; a session that reads black with a
+        # colorimeter has no such spectrum, so the exclusion is stated.
+        grey_mask = grey_mask & ~np.all(self._data.test_colors == (0, 0, 0), axis=1)
+
         grey["measurements"] = self._data.measurements[grey_mask]
         grey["data_levels"] = self._data.test_colors[grey_mask, 0]
         grey["cct"] = np.array([(m.cct, m.duv) for m in grey["measurements"]])
@@ -227,17 +336,30 @@ class ColourPrecisionAnalysis:
             grey["data_levels"], return_inverse=True, return_counts=True
         )
 
+        # Averaging the spectra and subtracting black's is the better path,
+        # but it needs a spectrum on both sides. Where either is missing --
+        # a colorimeter-routed row, or a dark end read without one -- the
+        # tristimulus is measured and says the same thing about luminance
+        # and chromaticity, so it stands in rather than dropping the level.
+        black_spd = self.black.get("spd")
+        black_XYZ = self.black["XYZ"]
+
         avg_scale = []
         for unique_idx, _ in enumerate(grey["uniques"][0]):
             umask = grey["uniques"][1] == unique_idx
-            spd = MultiSpectralDistributions(
-                data=[m.spd for m in grey["measurements"][umask]]
-            )
-            spd = (
-                SpectralDistribution(np.mean(spd.values, axis=1), spd.domain)
-                - self.black["spd"]
-            )
-            XYZ = sd_to_XYZ(spd, k=683)
+            level = grey["measurements"][umask]
+            spectral = [m for m in level if hasattr(m, "spd")]
+
+            if spectral and black_spd is not None:
+                spd = MultiSpectralDistributions(data=[m.spd for m in spectral])
+                spd = (
+                    SpectralDistribution(np.mean(spd.values, axis=1), spd.domain)
+                    - black_spd
+                )
+                XYZ = sd_to_XYZ(spd, k=683)
+            else:
+                XYZ = np.mean([m.XYZ for m in level], axis=0) - black_XYZ
+
             RGB = XYZ_to_plotting_colourspace(xy_to_XYZ(XYZ_to_xy(XYZ)) * 0.9)
             CCT = XYZ_to_CCT_Ohno2013(XYZ)
             avg_scale.append((XYZ, RGB, CCT))
@@ -262,14 +384,16 @@ class ColourPrecisionAnalysis:
 
         white["xyz"] = self.primary_matrix.dot([1, 1, 1])
 
-        single_color_idx = np.all(self._data.test_colors == [1023, 1023, 1023], axis=1)
+        peak_code = self.contract.peak_code
+        single_color_idx = np.all(self._data.test_colors == [peak_code] * 3, axis=1)
         single_color_measurements = self._data.measurements[single_color_idx]
         white["peak"] = np.mean(
             [m.XYZ - self.black["XYZ"] for m in single_color_measurements],
             axis=0,
         )
-        white["luminance_quantized"] = pq.eotf_ST2084(
-            np.round(pq.eotf_inverse_ST2084(white["peak"][1]) * 1023) / 1023
+        contract = self.contract
+        white["luminance_quantized"] = contract.eotf(
+            np.round(contract.eotf_inverse(white["peak"][1]) * peak_code) / peak_code
         )
 
         return self._white
@@ -295,13 +419,20 @@ class ColourPrecisionAnalysis:
 
     @property
     def test_colors_linear(self):
-        """
-        Linearized and clipped test pattern colors. Assuming PQ!!
+        """Test pattern colors linearized at the declared contract.
+
+        The transfer function and the code-value scale both come from the
+        file (§spec:contract-analysis). Linearizing under the wrong one is
+        an error nothing downstream can detect: the chart renders, and the
+        numbers on it are wrong.
         """
         if hasattr(self, "_test_colors_linear"):
             return self._test_colors_linear
 
-        tmp = self._test_colors_linear = pq.eotf_ST2084(self.test_colors.T / 1023)
+        contract = self.contract
+        tmp = self._test_colors_linear = contract.eotf(
+            self.test_colors.T / contract.peak_code
+        )
         clipping_mask = tmp > self.white["luminance_quantized"]
         tmp[clipping_mask] = self.white["luminance_quantized"]
         return self._test_colors_linear

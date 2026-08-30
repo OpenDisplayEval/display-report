@@ -9,45 +9,14 @@ that repository's ROADMAP.md.
 ## Contract-driven analysis §road:contract-analysis-impl
 
 The analysis reads the encoding from the file instead of assuming PQ
-at ten bits. Every workstream here is blocked on display-measure
-emitting the seam file (`§road:emit-csmf` there); unblocked when a
-file written by `display-measure characterize` carries the provenance
-block.
+at ten bits.
 
-### Read the seam file §road:read-seam-file
-
-Load the measurement seam file and its provenance block — declared
-contract, protocol name, attested panel state, input hashes — in
-`display_report/analysis.py`, refusing a file whose provenance block
-is absent or unreadable. §spec:report-input.
-
-### Read the contract §road:analysis-reads-contract
-
-Take transfer function and bit depth from the declared contract rather
-than the hardcoded `st_2084` and 1023 denominators in
-`display_report/analysis.py`, refusing a declared contract the
-analysis does not implement. §spec:contract-analysis. Depends on
-§road:read-seam-file.
-
-### Name the rows without a measured spectrum §road:spectral-row-provenance
-
-Carry each row's spectral provenance through the analysis and report
-which rows an analysis excluded and why, in
-`display_report/analysis.py`. §spec:report-input. Depends on
-§road:read-seam-file.
-
-### Render at the declared contract §road:pdf-contract-axes
-
-Parameterize the transfer-function plots, their tick placement, axis
-labels and code-value bounds by the declared contract in
-`display_report/pdf.py`. §spec:report-rendering. Depends on
-§road:analysis-reads-contract.
 
 ### Report an SDR 12-bit session §road:sdr-12bit-report
 
-Produce a report from a 12-bit gamma bench session and state the
-contract it read on the page. §spec:contract-analysis,
-§spec:report-rendering. Depends on §road:pdf-contract-axes.
+Produce a report from a 12-bit gamma bench session measured on the
+bench rig rather than against the display double.
+§spec:contract-analysis, §spec:report-rendering.
 
 **Verify:** a 12-bit gamma file and a 10-bit PQ file each analyze
 correctly and neither is silently interpreted as the other; the report
