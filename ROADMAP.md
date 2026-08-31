@@ -11,7 +11,6 @@ that repository's ROADMAP.md.
 The analysis reads the encoding from the file instead of assuming PQ
 at ten bits.
 
-
 ### Report an SDR 12-bit session §road:sdr-12bit-report
 
 Produce a report from a 12-bit gamma bench session measured on the
