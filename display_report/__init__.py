@@ -16,6 +16,8 @@ _EXPORTS = {
     "analyze_measurements_from_file": "display_report.analysis",
     "generate_report_page": "display_report.pdf",
     "render_report_pdf": "display_report.pdf",
+    "FIGURES": "display_report.figures",
+    "render_figure": "display_report.figures",
     "SignalContract": "display_report.provenance",
     "ProvenanceError": "display_report.provenance",
     "read_provenance": "display_report.provenance",
@@ -54,6 +56,8 @@ if TYPE_CHECKING:
     from display_report.analysis import (
         analyze_measurements_from_file as analyze_measurements_from_file,
     )
+    from display_report.figures import FIGURES as FIGURES
+    from display_report.figures import render_figure as render_figure
     from display_report.pdf import generate_report_page as generate_report_page
     from display_report.pdf import render_report_pdf as render_report_pdf
     from display_report.provenance import ProvenanceError as ProvenanceError
