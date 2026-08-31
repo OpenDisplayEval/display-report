@@ -1,9 +1,8 @@
-"""Display measurement, analysis, and fidelity reporting.
+"""Display analysis and fidelity reporting.
 
-Public names resolve lazily. Importing this package therefore costs nothing
-beyond the standard library, and analysis-only users are not required to have
-the DeckLink SDK installed — ``TPGController`` pulls in ``bmd_sg``, which loads
-``libdecklink.dylib`` at import time.
+Reporting is a pure function of a measurement file (SPEC.md §spec:scope): no
+name here reaches an instrument or a signal generator. Public names resolve
+lazily, so importing this package costs nothing beyond the standard library.
 """
 
 from __future__ import annotations
@@ -16,15 +15,11 @@ _EXPORTS = {
     "ReflectanceData": "display_report.analysis",
     "analyze_measurements_from_file": "display_report.analysis",
     "generate_report_page": "display_report.pdf",
-    "DisplayMeasureController": "display_report.measurement_controllers",
-    "ProgressCallback": "display_report.measurement_controllers",
-    "ProgressPrinter": "display_report.measurement_controllers",
-    "ProgressUpdate": "display_report.measurement_controllers",
-    "PQ_TestColorsConfig": "display_report.test_colors",
-    "TestColors": "display_report.test_colors",
-    "TestColorsConfig": "display_report.test_colors",
-    "generate_colors": "display_report.test_colors",
-    "TPGController": "display_report.tpg_controller",
+    "render_report_pdf": "display_report.pdf",
+    "SignalContract": "display_report.provenance",
+    "ProvenanceError": "display_report.provenance",
+    "read_provenance": "display_report.provenance",
+    "contract_from": "display_report.provenance",
 }
 
 __all__ = sorted(_EXPORTS)
@@ -59,29 +54,9 @@ if TYPE_CHECKING:
     from display_report.analysis import (
         analyze_measurements_from_file as analyze_measurements_from_file,
     )
-    from display_report.measurement_controllers import (
-        DisplayMeasureController as DisplayMeasureController,
-    )
-    from display_report.measurement_controllers import (
-        ProgressCallback as ProgressCallback,
-    )
-    from display_report.measurement_controllers import (
-        ProgressPrinter as ProgressPrinter,
-    )
-    from display_report.measurement_controllers import (
-        ProgressUpdate as ProgressUpdate,
-    )
     from display_report.pdf import generate_report_page as generate_report_page
-    from display_report.test_colors import (
-        PQ_TestColorsConfig as PQ_TestColorsConfig,
-    )
-    from display_report.test_colors import (
-        TestColors as TestColors,
-    )
-    from display_report.test_colors import (
-        TestColorsConfig as TestColorsConfig,
-    )
-    from display_report.test_colors import (
-        generate_colors as generate_colors,
-    )
-    from display_report.tpg_controller import TPGController as TPGController
+    from display_report.pdf import render_report_pdf as render_report_pdf
+    from display_report.provenance import ProvenanceError as ProvenanceError
+    from display_report.provenance import SignalContract as SignalContract
+    from display_report.provenance import contract_from as contract_from
+    from display_report.provenance import read_provenance as read_provenance

@@ -1,7 +1,14 @@
 """PDF generation for the display fidelity report."""
 
+# Annotations here name types imported only under TYPE_CHECKING. Without
+# this, they evaluate at def time and the module is unimportable on any
+# Python below 3.14 — where PEP 649 defers them and hides the breakage.
+# This package supports 3.12 upward.
+from __future__ import annotations
+
 import importlib
 import importlib.resources
+import io
 from typing import TYPE_CHECKING
 
 import matplotlib
@@ -12,7 +19,6 @@ from colour.colorimetry.datasets.illuminants.sds import SDS_ILLUMINANTS
 from colour.colorimetry.tristimulus_values import sd_to_XYZ
 from colour.models.cie_luv import Luv_to_uv, XYZ_to_Luv, xy_to_Luv_uv
 from colour.models.rgb.datasets import RGB_COLOURSPACES
-from colour.models.rgb.transfer_functions import st_2084 as pq
 from colour.plotting.models import (
     plot_ellipses_MacAdam1942_in_chromaticity_diagram_CIE1976UCS,
 )
@@ -23,6 +29,7 @@ from matplotlib.patches import Polygon
 from sklearn.cluster import KMeans
 
 from display_report.fonts import Anuphan
+from display_report.utilities import tool_identifier
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -184,13 +191,19 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
     )
     ax.set_yscale("log", base=2)
     ax.set_xscale("log", base=2)
-    ax.set_xlim(pq.eotf_inverse_ST2084(0.1) * 1023, 1024)  # type: ignore
+    contract = data.contract
+    peak_code = contract.peak_code
+    ax.set_xlim(contract.eotf_inverse(0.1) * peak_code, peak_code + 1)  # type: ignore
     ax.set_ylim(bottom=0.1, top=10000)
 
     ax.set_yticks(2.0 ** np.arange(-3, 14))
-    ax.set_xticks((2.0 ** np.arange(6, 11)) - 1, ["63", "127", "255", "511", "1023"])
+    # Powers of two up to the declared depth: the ticks a code-value axis
+    # wants, wherever that axis ends.
+    decades = np.arange(6, contract.bit_depth + 1)
+    code_ticks = (2.0**decades) - 1
+    ax.set_xticks(code_ticks, [str(int(t)) for t in code_ticks])
 
-    x_1000cd = pq.eotf_inverse_ST2084(1000) * 1023
+    x_1000cd = contract.eotf_inverse(1000) * peak_code
     ax.plot([x_1000cd, x_1000cd], [0, 1000], color="#5a9c9e")
     ax.text(
         x_1000cd + 25,  # type: ignore
@@ -203,18 +216,25 @@ def plot_eotf_accuracy(data: ColourPrecisionAnalysis, ax: Axes | None = None) ->
     )
 
     ax.plot(
-        np.arange(0, 1023),
-        pq.eotf_ST2084(np.arange(0, 1023) / 1023),
+        np.arange(0, peak_code),
+        contract.eotf(np.arange(0, peak_code) / peak_code),
         color=[1, 0, 0],
     )
-    ax.set_title("PQ EOTF Performance")
-    ax.set_xlabel("10-bit Code Value (Log)")
+    # An axis labelled "10-bit" under a 12-bit session is a false statement
+    # about the measurement, printed on the artifact a human judges from
+    # (§spec:report-rendering). Both follow the declared contract.
+    if contract.transfer_function == "gamma":
+        transfer_name = f"Gamma {contract.gamma_value:g}"
+    else:
+        transfer_name = contract.transfer_function.upper()
+    ax.set_title(f"{transfer_name} EOTF Performance")
+    ax.set_xlabel(f"{contract.bit_depth}-bit Code Value (Log)")
     ax.set_ylabel("Luminance — cd/m² (nits), Log")
 
     max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
 
     ax.plot(
-        [63, pq.eotf_inverse_ST2084(max_luminance) * 1023],  # type: ignore
+        [63, contract.eotf_inverse(max_luminance) * peak_code],  # type: ignore
         [max_luminance, max_luminance],
         color="#6f5481",
         zorder=50,
@@ -258,16 +278,18 @@ def plot_wp_accuracy(
         temp_spec = fig_spec[1].subgridspec(2, 1, hspace=0.15)
         axs = [fig.add_subplot(temp_spec[0]), fig.add_subplot(temp_spec[1])]
 
-    xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5)) * 1023
+    contract = data.contract
+    peak_code = contract.peak_code
+    xticks = contract.eotf_inverse(10.0 ** np.arange(-1, 5)) * peak_code
     xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
     xtick_minor = (
-        pq.eotf_inverse_ST2084(
+        contract.eotf_inverse(
             (
                 np.arange(2, 10).reshape(1, -1)
                 * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
             ).flatten()
         )
-        * 1023
+        * peak_code
     )
 
     tgt_XYZ = sd_to_XYZ(SDS_ILLUMINANTS["D65"], k=683)
@@ -288,9 +310,9 @@ def plot_wp_accuracy(
 
     def plot_max_luminance_line(ax: Axes) -> tuple[float, float]:
         max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
-        x_max_luminance = pq.eotf_inverse_ST2084(max_luminance) * 1023
+        x_max_luminance = contract.eotf_inverse(max_luminance) * peak_code
 
-        ax.set_xlim(left=float(pq.eotf_inverse_ST2084(0.1) * 1023), right=1023)
+        ax.set_xlim(left=float(contract.eotf_inverse(0.1) * peak_code), right=peak_code)
         ax.set_xticks(
             xtick_minor,
             [],
@@ -308,7 +330,12 @@ def plot_wp_accuracy(
         ax.set_xticks(xticks, [])
         ax.plot(ax.get_xlim(), (tgt_cct[0], tgt_cct[0]))
 
-        ax.text(float(pq.eotf_inverse_ST2084(0.11) * 1013), 6540, "D65", fontsize=8)
+        ax.text(
+            float(contract.eotf_inverse(0.11) * peak_code * 0.99),
+            6540,
+            "D65",
+            fontsize=8,
+        )
         plot_max_luminance_line(ax)
         _plot_y_tolerance_bg(
             ax,
@@ -363,7 +390,12 @@ def plot_wp_accuracy(
         ax.set_xticks(xticks, xtick_labels)
 
         ax.plot(ax.get_xlim(), (tgt_cct[1], tgt_cct[1]))
-        ax.text(float(pq.eotf_inverse_ST2084(0.11) * 1013), 0.004, "D65", fontsize=8)
+        ax.text(
+            float(contract.eotf_inverse(0.11) * peak_code * 0.99),
+            0.004,
+            "D65",
+            fontsize=8,
+        )
 
         x_max_luminance = plot_max_luminance_line(ax)
         ax.scatter(data.grey["uniques"][0], cct_list[:, 1])
@@ -447,24 +479,25 @@ def plot_brightness_errors(
     ax.scatter(
         data.measured_colors["ICtCp"][:, 0],
         deltaI,
-        c=data.test_colors[:] / 1023,
+        c=data.test_colors[:] / data.contract.peak_code,
         s=50,
     )
     ax.set_yscale("symlog", base=2)
     ax.set_ylim(-(2**5), 2**5)
     ax.set_yticks((([[2, 2]] ** np.arange(0, 6).reshape(-1, 1)) * [1, -1]).flatten())
-    ax.set_xlim(pq.eotf_inverse_ST2084(0.1), 1)  # type: ignore
+    contract = data.contract
+    ax.set_xlim(contract.eotf_inverse(0.1), 1)  # type: ignore
 
-    xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5))
+    xticks = contract.eotf_inverse(10.0 ** np.arange(-1, 5))
     xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
-    xticks_minor = pq.eotf_inverse_ST2084(
+    xticks_minor = contract.eotf_inverse(
         (
             np.arange(2, 10).reshape(1, -1) * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
         ).flatten()
     )
 
     max_luminance = np.max([m[0][1] for m in data.grey["avg_scale"]])
-    x_max_luminance = pq.eotf_inverse_ST2084(max_luminance)
+    x_max_luminance = contract.eotf_inverse(max_luminance)
 
     ax.set_xticks(xticks, xtick_labels)
     ax.set_xticks(xticks_minor, minor=True)
@@ -516,10 +549,13 @@ def _plot_y_tolerance_bg(
     return ax.imshow(
         bg_image,
         extent=(*ax.get_xlim(), *ax.get_ylim()),
+        # `np.diff` returns a one-element array, and NumPy 2 refuses to
+        # convert anything but a 0-d array to a scalar. Index it, as the
+        # arrow sizing above already does.
         aspect=float(
             aspect_multiplier
-            * abs(np.diff(ax.get_xlim()))
-            / abs(np.diff(ax.get_ylim()))
+            * abs(np.diff(ax.get_xlim()))[0]
+            / abs(np.diff(ax.get_ylim()))[0]
         ),
     )
 
@@ -555,22 +591,23 @@ def plot_chromatic_error(data: ColourPrecisionAnalysis, ax: Axes | None = None) 
     ax.scatter(
         data.measured_colors["ICtCp"][:, 0],
         delta_cr,
-        c=data.test_colors / 1023,
+        c=data.test_colors / data.contract.peak_code,
         s=50,
     )
     ax.set_yscale("symlog", base=2)
     ax.set_ylim(0, 2**5)
     ax.set_yticks(2 ** np.arange(0, 6))
-    ax.set_xlim(pq.eotf_inverse_ST2084(0.1), 1)  # type: ignore
+    contract = data.contract
+    ax.set_xlim(contract.eotf_inverse(0.1), 1)  # type: ignore
 
-    xticks = pq.eotf_inverse_ST2084(10.0 ** np.arange(-1, 5))
+    xticks = contract.eotf_inverse(10.0 ** np.arange(-1, 5))
     xtick_labels = ["0.1"] + [f"{(10.0**m):.0f}" for m in np.arange(0, 5)]
-    xticks_minor = pq.eotf_inverse_ST2084(
+    xticks_minor = contract.eotf_inverse(
         (
             np.arange(2, 10).reshape(1, -1) * [10.0] ** np.arange(-1, 4).reshape(-1, 1)
         ).flatten()
     )
-    x_max_luminance = pq.eotf_inverse_ST2084(data.white["luminance_quantized"])
+    x_max_luminance = contract.eotf_inverse(data.white["luminance_quantized"])
 
     ax.set_xticks(xticks, xtick_labels)
     ax.set_xticks(xticks_minor, minor=True)
@@ -604,9 +641,22 @@ def plot_report_header(ax: Axes, data: ColourPrecisionAnalysis):
     ax.set_ylim(0, 1)
     ax.set_axis_off()
 
+    # Provenance: tolerances and metrics change between versions, so a report
+    # states which build produced it.
+    ax.text(
+        1,
+        0.15,
+        tool_identifier(),
+        va="bottom",
+        ha="right",
+        fontsize=8,
+        color="0.4",
+    )
+
     info = data.device_info
     if info is None:
-        ax.text(0, 0, f"{data.shortname}", va="bottom", fontsize=16)
+        ax.text(0, 0.15, f"{data.shortname}", va="bottom", fontsize=16)
+        ax.text(0, 0.05, _contract_line(data), va="top", fontsize=8, color="0.4")
         return
 
     ax.text(0, 0.15, info.display_name, va="bottom", fontsize=16)
@@ -621,15 +671,49 @@ def plot_report_header(ax: Axes, data: ColourPrecisionAnalysis):
     if info.led_type:
         detail_parts.append(f"LED: {info.led_type}")
 
-    if detail_parts:
-        ax.text(
-            0,
-            0.05,
-            "  |  ".join(detail_parts),
-            va="top",
-            fontsize=8,
-            color="0.4",
-        )
+    detail_parts.append(_contract_line(data))
+    ax.text(
+        0,
+        0.05,
+        "  |  ".join(detail_parts),
+        va="top",
+        fontsize=8,
+        color="0.4",
+    )
+
+
+def _contract_line(data: ColourPrecisionAnalysis) -> str:
+    """One line naming what the report was measured and read under.
+
+    A report that does not say which contract it read cannot be checked
+    against the session that produced it, and a file measured at one
+    contract analyzed as another is the failure the seam exists to prevent
+    (§spec:contract-analysis). Saying it out loud is what makes that
+    guarantee visible to the person holding the page.
+    """
+    contract = data.contract
+    if contract.transfer_function == "gamma":
+        transfer = f"gamma {contract.gamma_value:g}"
+    else:
+        transfer = contract.transfer_function.upper()
+
+    parts = [f"{transfer}, {contract.bit_depth}-bit"]
+    if contract.peak_luminance:
+        parts.append(f"{contract.peak_luminance:g} cd/m²")
+
+    try:
+        protocol = (data.provenance.get("protocol") or {}).get("name")
+    except Exception:
+        protocol = None
+    if protocol:
+        parts.append(str(protocol))
+
+    parts.append(
+        "declared by the file"
+        if contract.declared
+        else "ASSUMED — the file declares no contract"
+    )
+    return "  |  ".join(parts)
 
 
 def plot_error_statistics(
@@ -801,3 +885,42 @@ def generate_report_page(
 
     plt.show(block=False)
     return fig
+
+
+def render_report_pdf(
+    color_data: ColourPrecisionAnalysis,
+    reflectance_data: ReflectanceData | None = None,
+) -> bytes:
+    """Render the report page and return it as PDF bytes.
+
+    The in-process surface behind `display-report analyze`
+    (SPEC.md §spec:report-api). A caller holding an analysis gets the
+    report without a subprocess, a temporary file it did not choose, or a
+    path to scrape for failures.
+
+    Parameters
+    ----------
+    color_data : ColourPrecisionAnalysis
+        The analysis to report on.
+    reflectance_data : ReflectanceData | None, optional
+        Reflectance data, measured separately from the colour precision
+        data, by default None.
+
+    Returns
+    -------
+    bytes
+        The report as a PDF document.
+    """
+    figure = generate_report_page(
+        color_data=color_data, reflectance_data=reflectance_data
+    )
+    # pyplot holds every figure it creates, so a server rendering report
+    # after report grows without bound unless each one is closed. The
+    # close belongs in a finally: a failed render leaks just as well.
+    try:
+        buffer = io.BytesIO()
+        figure.savefig(buffer, format="pdf", facecolor=(1, 1, 1))
+    finally:
+        plt.close(figure)
+
+    return buffer.getvalue()

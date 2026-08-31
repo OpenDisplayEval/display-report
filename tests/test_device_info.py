@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from argparse import Namespace
-from unittest.mock import patch
-
 from display_report.device_info import (
     DeviceInfo,
-    resolve_device_metadata,
-    run_device_wizard,
 )
 
 
@@ -85,102 +80,3 @@ class TestFromNotesString:
         assert info.led_panel == "Absen PL2.5 Pro"
         assert info.firmware_version == "V5.4.2.8"
         assert info.driver_chip is None
-
-
-class TestToMetadata:
-    """Test DeviceInfo.to_metadata produces valid CSMF_Metadata."""
-
-    def test_to_metadata_contains_separator(self):
-        info = DeviceInfo(led_processor="Test", led_panel="Panel")
-        meta = info.to_metadata()
-        assert "---OLE-DEVICE-INFO---" in meta.notes
-
-
-class TestResolveDeviceMetadata:
-    """Tests for resolve_device_metadata."""
-
-    def test_device_name_flag_skips_wizard(self):
-        args = Namespace(device_name="My Display")
-        meta = resolve_device_metadata(args)
-        assert meta.notes == "My Display"
-
-    def test_non_tty_uses_timestamp_default(self):
-        args = Namespace(device_name=None)
-        with patch("sys.stdin") as mock_stdin:
-            mock_stdin.isatty.return_value = False
-            meta = resolve_device_metadata(args)
-        assert meta.notes.startswith("Device Measurements ")
-
-    def test_non_tty_never_runs_wizard(self):
-        args = Namespace(device_name=None)
-        with (
-            patch("sys.stdin") as mock_stdin,
-            patch("display_report.device_info.run_device_wizard") as mock_wizard,
-        ):
-            mock_stdin.isatty.return_value = False
-            resolve_device_metadata(args)
-        mock_wizard.assert_not_called()
-
-    def test_tty_runs_wizard(self):
-        args = Namespace(device_name=None)
-        fake_info = DeviceInfo(led_processor="TestProc", led_panel="TestPanel")
-        with (
-            patch("sys.stdin") as mock_stdin,
-            patch(
-                "display_report.device_info.run_device_wizard", return_value=fake_info
-            ),
-        ):
-            mock_stdin.isatty.return_value = True
-            meta = resolve_device_metadata(args)
-        assert "TestProc / TestPanel" in meta.notes
-        assert "---OLE-DEVICE-INFO---" in meta.notes
-
-    def test_device_name_flag_skips_wizard_on_tty(self):
-        args = Namespace(device_name="My Display")
-        with (
-            patch("sys.stdin") as mock_stdin,
-            patch("display_report.device_info.run_device_wizard") as mock_wizard,
-        ):
-            mock_stdin.isatty.return_value = True
-            meta = resolve_device_metadata(args)
-        mock_wizard.assert_not_called()
-        assert meta.notes == "My Display"
-
-
-class TestRunDeviceWizard:
-    """Tests for run_device_wizard with mocked questionary input."""
-
-    def test_wizard_collects_all_fields(self):
-        responses = iter(
-            [
-                "Novastar MX40",
-                "Absen PL2.5",
-                "V5.4.2.8",
-                "4.7.2.0",
-                "ICN2153",
-                "Nationstar 2727",
-            ]
-        )
-        with patch("questionary.text") as mock_text:
-            mock_text.return_value.unsafe_ask.side_effect = lambda: next(responses)
-            info = run_device_wizard()
-
-        assert info.led_processor == "Novastar MX40"
-        assert info.led_panel == "Absen PL2.5"
-        assert info.firmware_version == "V5.4.2.8"
-        assert info.receiver_card_firmware == "4.7.2.0"
-        assert info.driver_chip == "ICN2153"
-        assert info.led_type == "Nationstar 2727"
-
-    def test_wizard_optional_fields_empty(self):
-        responses = iter(["Brompton SX40", "ROE BP2V2", "", "", "", ""])
-        with patch("questionary.text") as mock_text:
-            mock_text.return_value.unsafe_ask.side_effect = lambda: next(responses)
-            info = run_device_wizard()
-
-        assert info.led_processor == "Brompton SX40"
-        assert info.led_panel == "ROE BP2V2"
-        assert info.firmware_version is None
-        assert info.receiver_card_firmware is None
-        assert info.driver_chip is None
-        assert info.led_type is None

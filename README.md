@@ -1,9 +1,12 @@
 # display-report
 
-display-report measures displays and produces a standardized, open-source fidelity
-report. It sends hundreds of known code values to a display, captures the
-resulting light output with a spectroradiometer, and compares the two to
-quantify reproduction accuracy.
+display-report produces a standardized, open-source display fidelity report. It
+reads a measurement file — hundreds of known code values and the light each one
+produced — and compares the two to quantify reproduction accuracy.
+
+It does not measure. Sessions belong to
+[display-measure](https://github.com/OpenDisplayEval/display-measure), which
+keeps the report independent of the calibration under test.
 
 ## Where this fits
 
@@ -127,12 +130,11 @@ acceptable.
 git clone https://github.com/OpenDisplayEval/display-report.git
 cd display-report
 uv sync
-uv run display-report measure --max-luminance 1500 --bit-depth 10 --save-directory ./measurements
-uv run display-report analyze ./measurements/<file>.csmf
+uv run display-report analyze path/to/measurements.csmf
 ```
 
-See [USAGE.md](USAGE.md) for hardware setup, full CLI reference, and development
-instructions.
+See [USAGE.md](USAGE.md) for where measurement files come from, the full CLI
+reference, and development instructions.
 
 ## License
 
