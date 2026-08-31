@@ -1,22 +1,16 @@
-"""Device information capture for LED display measurements.
+"""Device metadata carried in a measurement file's notes.
 
-Provides a structured ``DeviceInfo`` dataclass for LED hardware metadata and an
-interactive TTY wizard that collects the information at measurement time.
+``DeviceInfo`` round-trips LED hardware metadata through
+``CSMF_Metadata.notes`` so the report header can name the display it is
+reporting on. Reading only: the wizard that collected this at measurement
+time left with the measure path (SPEC.md §spec:scope), and the tool that
+writes the file now records it.
 """
 
 from __future__ import annotations
 
 import json
-import sys
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING
-
-from specio.serialization import CSMF_Metadata
-
-from display_report.utilities import datetime_now, tool_identifier
-
-if TYPE_CHECKING:
-    from argparse import Namespace
 
 _SEPARATOR = "---OLE-DEVICE-INFO---"
 _FORMAT_VERSION = 1
@@ -67,10 +61,6 @@ class DeviceInfo:
         payload["v"] = _FORMAT_VERSION
         return f"{self.display_name}\n{_SEPARATOR}\n{json.dumps(payload)}"
 
-    def to_metadata(self) -> CSMF_Metadata:
-        """Wrap into a ``CSMF_Metadata`` instance."""
-        return CSMF_Metadata(notes=self.to_notes_string(), software=tool_identifier())
-
     @classmethod
     def from_notes_string(cls, notes: str) -> DeviceInfo | None:
         """Parse a ``CSMF_Metadata.notes`` value.
@@ -103,83 +93,3 @@ class DeviceInfo:
             led_type=data.get("led_type"),
             firmware_version=data.get("firmware_version"),
         )
-
-
-def run_device_wizard() -> DeviceInfo:
-    """Run an interactive TTY wizard to collect device metadata.
-
-    Returns
-    -------
-    DeviceInfo
-        Populated from user responses.
-    """
-    import questionary
-
-    print("\nDevice Under Test")
-    print("─────────────────")
-
-    led_processor = questionary.text(
-        "LED Processor (required):",
-        validate=lambda val: len(val.strip()) > 0 or "This field is required.",
-    ).unsafe_ask()
-
-    led_panel = questionary.text(
-        "LED Panel (required):",
-        validate=lambda val: len(val.strip()) > 0 or "This field is required.",
-    ).unsafe_ask()
-
-    firmware_version = questionary.text(
-        "Firmware / Hardware Version (if known):",
-    ).unsafe_ask()
-
-    receiver_card_firmware = questionary.text(
-        "Receiver Card Firmware (if known):",
-    ).unsafe_ask()
-
-    driver_chip = questionary.text(
-        "Driver Chip (if known):",
-    ).unsafe_ask()
-
-    led_type = questionary.text(
-        "LED Type (if known):",
-    ).unsafe_ask()
-
-    return DeviceInfo(
-        led_processor=led_processor.strip(),
-        led_panel=led_panel.strip(),
-        receiver_card_firmware=receiver_card_firmware.strip() or None,
-        driver_chip=driver_chip.strip() or None,
-        led_type=led_type.strip() or None,
-        firmware_version=firmware_version.strip() or None,
-    )
-
-
-def resolve_device_metadata(args: Namespace) -> CSMF_Metadata:
-    """Determine device metadata from CLI args or interactive wizard.
-
-    Priority:
-    1. ``--device-name`` provided → legacy plain-text notes.
-    2. stdin is a TTY → run the interactive wizard.
-    3. Non-interactive → timestamp default.
-
-    Parameters
-    ----------
-    args : Namespace
-        Parsed CLI arguments. Must contain ``device_name``, which is ``None``
-        when the flag was not supplied.
-
-    Returns
-    -------
-    CSMF_Metadata
-    """
-    if args.device_name is not None:
-        return CSMF_Metadata(notes=args.device_name, software=tool_identifier())
-
-    if sys.stdin.isatty():
-        device_info = run_device_wizard()
-        return device_info.to_metadata()
-
-    return CSMF_Metadata(
-        notes=datetime_now().strftime("Device Measurements %y-%m-%d %H:%M"),
-        software=tool_identifier(),
-    )
