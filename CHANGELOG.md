@@ -1,3 +1,10 @@
+## [0.0.10](https://github.com/OpenDisplayEval/display-report/compare/v0.0.9...v0.0.10) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump notebook from 7.5.3 to 7.5.6 ([#38](https://github.com/OpenDisplayEval/display-report/issues/38)) ([da6905e](https://github.com/OpenDisplayEval/display-report/commit/da6905e82765571e7acfaf2b44d9a7da5d7c5b9d))
+
 ## [0.0.9](https://github.com/OpenDisplayEval/display-report/compare/v0.0.8...v0.0.9) (2026-08-31)
 
 
