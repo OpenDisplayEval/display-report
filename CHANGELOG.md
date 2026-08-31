@@ -1,3 +1,10 @@
+## [0.0.9](https://github.com/OpenDisplayEval/display-report/compare/v0.0.8...v0.0.9) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump requests from 2.32.5 to 2.33.0 ([#39](https://github.com/OpenDisplayEval/display-report/issues/39)) ([0210129](https://github.com/OpenDisplayEval/display-report/commit/021012948c4257cc23bc6ac700c8ada78f6ac138))
+
 ## [0.0.8](https://github.com/OpenDisplayEval/display-report/compare/v0.0.7...v0.0.8) (2026-08-31)
 
 
