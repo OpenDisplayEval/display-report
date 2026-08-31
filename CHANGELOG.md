@@ -1,3 +1,19 @@
+## [0.0.9](https://github.com/OpenDisplayEval/display-report/compare/v0.0.8...v0.0.9) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump requests from 2.32.5 to 2.33.0 ([#39](https://github.com/OpenDisplayEval/display-report/issues/39)) ([0210129](https://github.com/OpenDisplayEval/display-report/commit/021012948c4257cc23bc6ac700c8ada78f6ac138))
+
+## [0.0.8](https://github.com/OpenDisplayEval/display-report/compare/v0.0.7...v0.0.8) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump nbconvert from 7.17.0 to 7.17.1 ([#37](https://github.com/OpenDisplayEval/display-report/issues/37)) ([85e15fe](https://github.com/OpenDisplayEval/display-report/commit/85e15fe147b07fb9e61b9ca5d0b35b605c5a0c36))
+* **deps:** bump pygments from 2.19.2 to 2.20.0 ([735d6b2](https://github.com/OpenDisplayEval/display-report/commit/735d6b21b7e05f1304e842883f9b810fc914fe8f))
+* **deps:** bump urllib3 from 2.6.3 to 2.7.0 ([#35](https://github.com/OpenDisplayEval/display-report/issues/35)) ([40337fc](https://github.com/OpenDisplayEval/display-report/commit/40337fc74d4355a48d12256e1789f1d26876b4ed))
+
 ## [0.0.7](https://github.com/OpenDisplayEval/display-report/compare/v0.0.6...v0.0.7) (2026-08-31)
 
 
