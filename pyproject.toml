@@ -1,6 +1,7 @@
 [project]
 name = "display-report"
-version = "0.1.0"
+# Version derives from git tags (hatch-vcs); flywheel cuts the tags.
+dynamic = ["version"]
 description = "Display measurement, analysis, and fidelity reporting"
 authors = [{ name = "Unknown" }]
 requires-python = ">=3.12,<3.15"
@@ -28,13 +29,13 @@ display-report = "display_report.cli:main"
 [dependency-groups]
 dev = [
     "jupyter>=1.0.0,<2",
-    "pytest>=7.4.0,<8",
+    "pytest>=9.1.1,<10",
     "pytest-xdist>=3.3.1,<4",
     "pyright>=1.1.332",
     "ruff>=0.1.0",
     "invoke>=2.2.0",
     "pre-commit>=4.2.0",
-    "ipykernel>=6.29.0,<7",
+    "ipykernel>=7.3.0,<8",
     "networkx>=2.7,<3",
     "opencolorio>=2,<3",
     "tqdm>=4,<5",
@@ -50,8 +51,11 @@ colour-specio = { git = "https://github.com/colour-science/colour-specio.git", r
 [tool.uv]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["display_report"]
