@@ -1,3 +1,18 @@
+# [0.1.0](https://github.com/OpenDisplayEval/display-report/compare/v0.0.10...v0.1.0) (2026-08-31)
+
+
+### Bug Fixes
+
+* **pdf:** defer annotations so the module imports below Python 3.14 ([1ba0445](https://github.com/OpenDisplayEval/display-report/commit/1ba04452e7b6a4c5c908a66bb42b8998de433f6e))
+* **pdf:** label the transfer plot with the contract it read ([26f7e3e](https://github.com/OpenDisplayEval/display-report/commit/26f7e3eb69b061982fe070363343161f98ab9cc9))
+
+
+### Features
+
+* **analysis:** read the seam file's contract instead of assuming PQ at ten bits ([5795f4a](https://github.com/OpenDisplayEval/display-report/commit/5795f4a90fbe01d6c2547fd73edee2245de7b103))
+* **pdf:** render the report to bytes ([00f5c0f](https://github.com/OpenDisplayEval/display-report/commit/00f5c0fc75b43d6ab7f7f4e9ba10536ed2a23f9f))
+* stamp the tool version into measurement files and reports ([28319ed](https://github.com/OpenDisplayEval/display-report/commit/28319edd0cd536adeaba12090fa534d68b0c72a3))
+
 ## [0.0.10](https://github.com/OpenDisplayEval/display-report/compare/v0.0.9...v0.0.10) (2026-08-31)
 
 
