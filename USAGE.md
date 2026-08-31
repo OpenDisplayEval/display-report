@@ -64,6 +64,15 @@ from display_report import ReflectanceData, analyze_measurements_from_file
 analysis = analyze_measurements_from_file("measurements.csmf")
 ```
 
+To render the report without going through the CLI — what a server serving a
+download does — ask for the bytes:
+
+```python
+from display_report import analyze_measurements_from_file, render_report_pdf
+
+pdf_bytes = render_report_pdf(analyze_measurements_from_file("measurements.csmf"))
+```
+
 No export reaches a device. Analysis is a pure function of a measurement file,
 so a machine that reports needs neither the DeckLink SDK nor an instrument.
 

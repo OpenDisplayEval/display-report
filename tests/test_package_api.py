@@ -119,6 +119,30 @@ class TestHardwareFreeImport:
 
         assert result.stdout.strip() == "False"
 
+    def test_type_checking_modules_defer_annotations(self):
+        """A module annotating TYPE_CHECKING-only names needs the future import.
+
+        Without it the annotation evaluates at def time and the module is
+        unimportable below Python 3.14, where PEP 649 defers evaluation and
+        hides the breakage. `pdf.py` did exactly that: it imported fine on
+        the 3.14 dev environment and raised NameError for a consumer on
+        3.13. This package supports 3.12 upward.
+        """
+        import pathlib
+
+        package = pathlib.Path(
+            importlib.import_module("display_report").__file__
+        ).parent
+
+        for path in sorted(package.rglob("*.py")):
+            source = path.read_text()
+            if "TYPE_CHECKING" not in source:
+                continue
+            assert "from __future__ import annotations" in source, (
+                f"{path.relative_to(package)} annotates TYPE_CHECKING-only "
+                f"names without deferring evaluation"
+            )
+
     def test_unknown_attribute_raises_attribute_error(self):
         module = importlib.import_module("display_report")
 
