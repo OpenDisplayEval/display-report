@@ -6,36 +6,6 @@ sequencing live in
 workstreams there are addressed by slug in backticks and resolve in
 that repository's ROADMAP.md.
 
-## Measure-path retirement §road:measure-retirement
-
-The validator stops measuring. One tool touches instruments
-(§spec:scope), and after this section no code here opens a device.
-The patch-set generation moving out has a receiving half in
-display-measure (`§road:report-grade-protocol` there); this section is
-the removal.
-
-### Retire the measure path §road:retire-report-measure
-
-Delete `display_report/tpg_controller.py`,
-`display_report/measurement_controllers.py`,
-`display_report/scripts/measure_display.py`,
-`display_report/test_colors.py`, the `measure` subcommand in
-`display_report/cli.py`, and their entries in
-`display_report/__init__.py`. §spec:scope.
-
-### Drop the device dependency §road:drop-device-dependency
-
-Remove `bmd-signal-generator` and its `tool.uv.sources` pin from
-`pyproject.toml`, and drop the lazy-import guard the DeckLink SDK
-required from `display_report/__init__.py`. §spec:scope. Depends on
-§road:retire-report-measure.
-
-**Verify:** on a machine with no DeckLink SDK installed,
-`display-report analyze` runs and `import display_report` loads no
-device driver; `display-report --help` lists `analyze` and `anonymize`
-and no measure command; `uv sync` resolves without a signal-generator
-dependency.
-
 ## Contract-driven analysis §road:contract-analysis-impl
 
 The analysis reads the encoding from the file instead of assuming PQ

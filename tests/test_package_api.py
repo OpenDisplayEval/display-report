@@ -9,10 +9,9 @@ import sys
 
 import pytest
 
-# Resolving these pulls in bmd_sg, which loads libdecklink.dylib at import
-# time. Machines without the DeckLink SDK cannot import them, so the suite
-# checks their wiring without resolving them.
-HARDWARE_EXPORTS = frozenset({"TPGController"})
+# No export needs a device. The measure path left with the session core
+# (SPEC.md §spec:scope), so every public name resolves on any machine.
+HARDWARE_EXPORTS: frozenset[str] = frozenset()
 
 
 class TestPackageShape:
@@ -58,11 +57,12 @@ class TestPackageShape:
 
 
 class TestHardwareFreeImport:
-    """Importing the package must not require the DeckLink SDK."""
+    """Reporting needs a file, not a rig (SPEC.md §spec:scope)."""
 
     def test_import_does_not_load_signal_backend(self):
-        """`bmd_sg` loads libdecklink.dylib at import time. Pulling it in
-        eagerly makes the package unimportable for analysis-only users."""
+        """`bmd_sg` loads libdecklink.dylib at import time, so a machine
+        without the DeckLink SDK could not import a package that pulled it
+        in. Nothing here depends on it now; this holds the line."""
         probe = "import display_report, sys; print('bmd_sg' in sys.modules)"
         result = subprocess.run(
             [sys.executable, "-c", probe],
@@ -75,16 +75,38 @@ class TestHardwareFreeImport:
 
     def test_analysis_exports_resolve(self):
         from display_report import (
-            DisplayMeasureController,
-            PQ_TestColorsConfig,
-            TestColors,
-            generate_colors,
+            ColourPrecisionAnalysis,
+            ReflectanceData,
+            analyze_measurements_from_file,
+            generate_report_page,
         )
 
-        assert DisplayMeasureController is not None
-        assert PQ_TestColorsConfig is not None
-        assert TestColors is not None
-        assert callable(generate_colors)
+        assert ColourPrecisionAnalysis is not None
+        assert ReflectanceData is not None
+        assert callable(analyze_measurements_from_file)
+        assert callable(generate_report_page)
+
+    def test_no_export_reaches_a_device(self):
+        """The validator owns no measure path (SPEC.md §spec:scope).
+
+        A device name back in the public API means the ungated path came
+        back with it.
+        """
+        module = importlib.import_module("display_report")
+
+        retired = {
+            "TPGController",
+            "DisplayMeasureController",
+            "ProgressCallback",
+            "ProgressPrinter",
+            "ProgressUpdate",
+            "PQ_TestColorsConfig",
+            "TestColors",
+            "TestColorsConfig",
+            "generate_colors",
+        }
+
+        assert retired.isdisjoint(module.__all__)
 
     def test_cli_module_imports_without_signal_backend(self):
         probe = "import display_report.cli, sys; print('bmd_sg' in sys.modules)"
@@ -127,6 +149,12 @@ class TestCommandLine:
 
         assert main(["bogus"]) == 2
         assert "unknown command 'bogus'" in capsys.readouterr().err
+
+    def test_no_measure_command(self):
+        """The measure loop left with the session core (SPEC.md §spec:scope)."""
+        from display_report.cli import COMMANDS
+
+        assert "measure" not in COMMANDS
 
     def test_every_command_targets_a_real_module(self):
         from display_report.cli import COMMANDS
