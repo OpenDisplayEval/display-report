@@ -41,8 +41,14 @@ dev = [
 [tool.uv.sources]
 # PyPI 0.4.2a0 declares requires-python >=3.13,<3.14 which blocks resolution
 # on Python 3.14. The git commit relaxes it to >=3.12 and works fine on 3.14.
-# Switch to a PyPI pin once upstream publishes a release with a broader bound.
-colour-specio = { git = "https://github.com/colour-science/colour-specio.git", rev = "492e261e" }
+#
+# The fork carries the CSMF loader fix this layer depends on: the released
+# loader reads only the legacy spectral list, so a hybrid session's file --
+# spectral rows beside the colorimetric ones its dark end produces -- comes
+# back with *zero* measurements and no error. The report then fails far from
+# the cause. Commit pin, not a branch; a branch head moves.
+# Reverts to an upstream release pin once the fix lands there.
+colour-specio = { git = "https://github.com/repentsinner/colour-specio", rev = "981d48627c7b2a02e14897500fa1a67da8f61c8a" }
 
 [tool.uv]
 
