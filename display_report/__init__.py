@@ -15,6 +15,7 @@ _EXPORTS = {
     "ReflectanceData": "display_report.analysis",
     "analyze_measurements_from_file": "display_report.analysis",
     "generate_report_page": "display_report.pdf",
+    "render_report_pdf": "display_report.pdf",
 }
 
 __all__ = sorted(_EXPORTS)
@@ -50,3 +51,4 @@ if TYPE_CHECKING:
         analyze_measurements_from_file as analyze_measurements_from_file,
     )
     from display_report.pdf import generate_report_page as generate_report_page
+    from display_report.pdf import render_report_pdf as render_report_pdf

@@ -12,12 +12,11 @@ def main():
     import argparse
     from pathlib import Path
 
-    from matplotlib import pyplot as plt
     from specio.serialization import CSMF_Metadata
 
     from display_report import (
         analyze_measurements_from_file,
-        generate_report_page,
+        render_report_pdf,
     )
     from display_report.analysis import ReflectanceData
     from display_report.utilities import get_valid_filename
@@ -93,12 +92,11 @@ def main():
 
     # Generate PDF
 
-    fig = generate_report_page(color_data=data, reflectance_data=reflectance)
-
-    fig.savefig(str(out_file_name), facecolor=[1, 1, 1])
+    out_file_name.write_bytes(
+        render_report_pdf(color_data=data, reflectance_data=reflectance)
+    )
 
     print(f"Analysis saved to: {out_file_name!s}")
-    plt.close(fig)
 
 
 if __name__ == "__main__":
