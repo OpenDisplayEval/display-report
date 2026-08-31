@@ -2,10 +2,12 @@
 
 ## Project overview
 
-display-report is a display measurement and analysis toolkit
-for LED/OLED display evaluation. It provides command-line tools for driving test
-pattern generators, capturing spectroradiometer measurements, and analyzing the
-resulting data to produce reports.
+display-report analyzes display measurement files and produces fidelity reports
+for LED/OLED display evaluation.
+
+It owns no measure path (SPEC.md §spec:scope). Sessions belong to
+display-measure; nothing here opens a serial port or a DeckLink, and no code
+here should acquire a device dependency.
 
 ## Common commands
 
@@ -37,8 +39,8 @@ uv run invoke clean           # Remove __pycache__, .pytest_cache, .ruff_cache
   first-party package.
 - **Public API**: `display_report/__init__.py` resolves exports lazily (PEP
   562). Add new public names to `_EXPORTS` and to the `TYPE_CHECKING` re-export
-  block. Never import `tpg_controller` at package import time — it pulls in
-  `bmd_sg`, which loads `libdecklink.dylib`.
+  block. No public name reaches a device — a device import here is a bug, not a
+  lazy-loading problem.
 
 ## Documentation style
 
@@ -66,7 +68,6 @@ A single console script, `display-report`, dispatches to subcommands via
 
 | Command                    | Module                                          | Description                                       |
 | -------------------------- | ----------------------------------------------- | ------------------------------------------------- |
-| `display-report measure`   | `display_report.scripts.measure_display`         | Drive TPG + spectroradiometer for measurements    |
 | `display-report analyze`   | `display_report.scripts.analyze_display_measurements` | Analyze measurement data and generate reports |
 | `display-report anonymize` | `display_report.scripts.strip_metadata`          | Strip identifying metadata from measurement files |
 
@@ -84,9 +85,6 @@ not set `prog=` — the dispatcher sets `sys.argv[0]` so help text reads
   - `pdf.py` — Report page rendering
   - `fonts/` — Bundled Anuphan typeface
   - `utilities.py` — Shared helper functions
-  - `measurement_controllers.py` — Spectroradiometer control
-  - `tpg_controller.py` — Test pattern generator control (requires DeckLink SDK)
-  - `test_colors.py` — Test colour definitions
   - `device_info.py` — Structured device metadata
 
 ## Error handling
