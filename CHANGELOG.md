@@ -1,3 +1,17 @@
+## [0.0.4](https://github.com/OpenDisplayEval/display-report/compare/v0.0.3...v0.0.4) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump mistune from 3.2.0 to 3.3.0 ([#23](https://github.com/OpenDisplayEval/display-report/issues/23)) ([068dd51](https://github.com/OpenDisplayEval/display-report/commit/068dd512c48fc67d65c4410b8913ba274d10040a))
+
+## [0.0.3](https://github.com/OpenDisplayEval/display-report/compare/v0.0.2...v0.0.3) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump pandas from 2.3.3 to 3.0.5 ([#19](https://github.com/OpenDisplayEval/display-report/issues/19)) ([20c1221](https://github.com/OpenDisplayEval/display-report/commit/20c1221c76709241ae0904cb1706a39424fed3a0))
+
 ## [0.0.2](https://github.com/OpenDisplayEval/display-report/compare/v0.0.1...v0.0.2) (2026-08-12)
 
 
