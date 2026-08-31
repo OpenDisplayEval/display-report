@@ -1,3 +1,13 @@
+## [0.0.7](https://github.com/OpenDisplayEval/display-report/compare/v0.0.6...v0.0.7) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** bump bleach from 6.3.0 to 6.4.0 ([#32](https://github.com/OpenDisplayEval/display-report/issues/32)) ([96b6f73](https://github.com/OpenDisplayEval/display-report/commit/96b6f7361ab6e7082147c32d973c397f3c583043))
+* **deps:** bump jupyter-server from 2.17.0 to 2.20.0 ([#31](https://github.com/OpenDisplayEval/display-report/issues/31)) ([8ba4177](https://github.com/OpenDisplayEval/display-report/commit/8ba41774f40ec5cdc54a52ed7328abf40dd012a2))
+* **deps:** bump soupsieve from 2.8.3 to 2.8.4 ([#34](https://github.com/OpenDisplayEval/display-report/issues/34)) ([1556c21](https://github.com/OpenDisplayEval/display-report/commit/1556c21b4993a0b92735ad3927455a026baba65b))
+* **deps:** bump tornado from 6.5.4 to 6.5.7 ([#33](https://github.com/OpenDisplayEval/display-report/issues/33)) ([0359ff7](https://github.com/OpenDisplayEval/display-report/commit/0359ff7a1ebd2ed93e95a9854aa7ea0e29cc4a9d))
+
 ## [0.0.6](https://github.com/OpenDisplayEval/display-report/compare/v0.0.5...v0.0.6) (2026-08-31)
 
 
