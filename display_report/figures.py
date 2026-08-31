@@ -9,6 +9,12 @@ report itself changing.
 
 Each figure is drawn on its own axes at its own size, so it is legible
 alone rather than as a tile of a letter-sized page.
+
+Vector by default. The report's own pages are vector -- real embedded
+fonts and several thousand path operations, rasterizing only the
+continuous colour gradients that cannot be anything else -- and a live
+view of the same figure has no reason to be worse. A raster would also
+break the moment anyone zoomed it.
 """
 
 from __future__ import annotations
@@ -68,10 +74,11 @@ def render_figure(
     analysis: ColourPrecisionAnalysis,
     name: str,
     *,
+    fmt: str = "svg",
     size: tuple[float, float] = (6.5, 6.0),
     dpi: int = 130,
 ) -> bytes:
-    """Render one report diagram as a PNG.
+    """Render one report diagram.
 
     Parameters
     ----------
@@ -79,17 +86,23 @@ def render_figure(
         The analysis to draw, as `render_report_pdf` takes.
     name : str
         A key of `FIGURES`.
+    fmt : str
+        Any format matplotlib writes: "svg" (the default, and what a
+        browser should be given), "pdf", or "png" for a caller that
+        genuinely needs pixels. Text is drawn as paths, so the report's
+        typeface survives into a viewer that has never seen the font.
     size : tuple[float, float]
         Figure size in inches. The default suits a single diagram on a
         web page rather than a tile of the printed page.
     dpi : int
-        Raster resolution. 130 keeps the MacAdam ellipses and the error
-        arrows readable without making the payload large.
+        Resolution for the raster elements a vector format still has to
+        embed -- the chromaticity diagram's colour field is a continuous
+        gradient and cannot be paths.
 
     Returns
     -------
     bytes
-        The diagram as a PNG.
+        The diagram in `fmt`.
 
     Raises
     ------
@@ -104,6 +117,9 @@ def render_figure(
         ) from None
 
     _use_report_font()
+    # Text as paths, so a browser that has never seen Anuphan still shows
+    # the report's lettering rather than substituting its own.
+    rcParams["svg.fonttype"] = "path"
 
     figure = plt.figure(figsize=size, facecolor=(1, 1, 1), dpi=dpi)
     try:
@@ -112,7 +128,7 @@ def render_figure(
         buffer = io.BytesIO()
         # `bbox_inches="tight"` because the page's spacing is the page's,
         # not this figure's.
-        figure.savefig(buffer, format="png", facecolor=(1, 1, 1), bbox_inches="tight")
+        figure.savefig(buffer, format=fmt, facecolor=(1, 1, 1), bbox_inches="tight")
     finally:
         # pyplot holds every figure it makes; a server rendering one per
         # view would grow without bound. Closed on the failure path too.

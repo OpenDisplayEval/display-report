@@ -28,14 +28,34 @@ def analysis():
 
 
 class TestRenderFigure:
-    def test_every_named_figure_renders(self, analysis) -> None:
+    def test_every_named_figure_renders_vector(self, analysis) -> None:
+        """SVG by default: the report's own pages are vector, and a live
+        view of the same figure has no reason to be worse."""
         from display_report.figures import FIGURES, render_figure
 
         for name in FIGURES:
             data = render_figure(analysis, name)
 
-            assert data[:4] == b"\x89PNG", f"{name} did not render a PNG"
+            assert data[:5] == b"<?xml", f"{name} did not render SVG"
+            assert b"viewBox" in data, f"{name} cannot scale without a viewBox"
             assert len(data) > 5_000, f"{name} rendered suspiciously small"
+
+    def test_the_lettering_survives_a_viewer_without_the_font(self, analysis) -> None:
+        """Text is drawn as paths, so a browser that has never seen
+        Anuphan shows the report's lettering rather than substituting."""
+        import re
+
+        from display_report.figures import render_figure
+
+        svg = render_figure(analysis, "chromaticity").decode("utf-8", "ignore")
+
+        assert not re.findall(r"<text", svg)
+        assert len(re.findall(r"<path", svg)) > 100
+
+    def test_a_caller_can_still_ask_for_pixels(self, analysis) -> None:
+        from display_report.figures import render_figure
+
+        assert render_figure(analysis, "chromaticity", fmt="png")[:4] == b"\x89PNG"
 
     def test_an_unknown_name_says_what_there_is(self, analysis) -> None:
         """A caller naming a figure that does not exist gets the list."""
