@@ -68,7 +68,7 @@ class ReflectanceData:
 class UnfilterableMeasurements(ValueError):
     """The analysis cannot tell which patches are above the noise floor.
 
-    Raised rather than analysing everything, because the alternative
+    Raised rather than analyzing everything, because the alternative
     quietly changes which measurements a report is built from
     (SPEC.md §spec:report-input).
     """
@@ -695,7 +695,7 @@ class ColourPrecisionAnalysis:
             self._data.test_colors = self._data.test_colors / 255.0
 
         # At construction, not at first figure. An artifact that cannot
-        # be analysed should say so before anything is computed from it.
+        # be analyzed should say so before anything is computed from it.
         self._check_requirements()
 
 

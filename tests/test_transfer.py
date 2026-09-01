@@ -98,7 +98,7 @@ class TestHeadroom:
 
     def test_the_threshold_flag_tracks_the_ratio(self) -> None:
         """Named `above_threshold` rather than `visible`: Barten's line is
-        the most favourable detection condition, not a verdict on
+        the most favorable detection condition, not a verdict on
         banding."""
         rows = quantization_headroom(RAMP, bit_depth=12)
         assert any(r.above_threshold is False for r in rows), "expected clean rungs"

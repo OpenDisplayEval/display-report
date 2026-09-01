@@ -21,7 +21,7 @@ that survives changing the contract (§road:lut-transfer-probe).
 
 Its threshold is not a hard line. Barten's model takes viewing distance,
 field size and spatial frequency, and the value used here is the peak of
-the sensitivity curve — the most favourable spatial frequency, which is
+the sensitivity curve — the most favorable spatial frequency, which is
 the conservative choice for a banding question. Real content is moving
 and complex, which raises the detection threshold, so a rung marginally
 over the line is a caution rather than a verdict.
@@ -87,7 +87,7 @@ class HeadroomRow:
 
         Not the same as "visible". Barten's threshold is for a sinusoidal
         grating at the spatial frequency the eye is best at, viewed
-        steadily — the most favourable detection condition there is.
+        steadily — the most favorable detection condition there is.
         Finding a one-code step in a gradient is harder, and moving
         content harder still. A rung over the line is where banding
         could show, not a claim that it does.

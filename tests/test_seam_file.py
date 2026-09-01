@@ -73,6 +73,7 @@ class TestToleratesRowsWithoutSpectra:
         assert len(analysis.rows_without_spectra) > 0
         assert len(analysis.rows_without_spectra) < len(analysis._data.measurements)
 
+
 class TestRendersTheReport:
     def test_renders_a_pdf_from_the_seam_file(self, analysis):
         """The end the whole seam exists for."""

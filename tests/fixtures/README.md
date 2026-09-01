@@ -31,16 +31,15 @@ display-measure characterize --out spectral_session.csmf --instrument doubles
 The analysis filters patches by their signal-to-noise ratio against the spread
 of the black *spectra* (§spec:report-input). A hybrid session routes black to a
 colorimeter, which has no spectrum, so that floor cannot be computed and the
-analysis refuses. This fixture is the case that can be analysed;
+analysis refuses. This fixture is the case that can be analyzed;
 `hybrid_session.csmf` is the case that shall be refused, and both are worth
 holding onto.
-
 
 ## report_session.csmf
 
 A report-grade session from the doubles:
 
-```
+```sh
 display-measure characterize --instrument doubles --suite report \
   --assume-attested --out report_session.csmf
 ```
@@ -54,7 +53,7 @@ measurement this analysis declares it requires
 
 A report-grade session through the disciplined-colorimeter path:
 
-```
+```sh
 display-measure characterize --instrument doubles-hybrid --suite report \
   --assume-attested --out hybrid_report_session.csmf
 ```
