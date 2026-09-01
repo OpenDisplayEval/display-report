@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 _EXPORTS = {
     "ColourPrecisionAnalysis": "display_report.analysis",
+    "UnfilterableMeasurements": "display_report.analysis",
     "ReflectanceData": "display_report.analysis",
     "analyze_measurements_from_file": "display_report.analysis",
     "generate_report_page": "display_report.pdf",
@@ -22,6 +23,27 @@ _EXPORTS = {
     "ProvenanceError": "display_report.provenance",
     "read_provenance": "display_report.provenance",
     "contract_from": "display_report.provenance",
+    "UnsupportedArtifact": "display_report.requires",
+    # The situational-awareness analysis, which used to live in the
+    # front end. A view and a report drawn from two implementations
+    # agree until one changes; these are the one implementation
+    # (§spec:report-api).
+    "coverage": "display_report.gamut",
+    "primary_deficits": "display_report.gamut",
+    "white_point_summary": "display_report.gamut",
+    "uv_from_xy": "display_report.gamut",
+    "densify": "display_report.gamut",
+    "HeadroomRow": "display_report.transfer",
+    "MEASURED_BIT_DEPTH": "display_report.transfer",
+    "fitted_exponent": "display_report.transfer",
+    "transfer_residuals": "display_report.transfer",
+    "quantization_headroom": "display_report.transfer",
+    "barten_threshold": "display_report.transfer",
+    "gamut_solid": "display_report.volume",
+    "solid_extent": "display_report.volume",
+    "channel_response": "display_report.volume",
+    "SolidExtent": "display_report.volume",
+    "NonAdditiveDisplay": "display_report.volume",
 }
 
 __all__ = sorted(_EXPORTS)
@@ -52,6 +74,9 @@ if TYPE_CHECKING:
     )
     from display_report.analysis import (
         ReflectanceData as ReflectanceData,
+    )
+    from display_report.analysis import (
+        UnfilterableMeasurements as UnfilterableMeasurements,
     )
     from display_report.analysis import (
         analyze_measurements_from_file as analyze_measurements_from_file,

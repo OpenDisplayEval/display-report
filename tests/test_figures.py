@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 
 from matplotlib import pyplot as plt
 
-FIXTURE = Path(__file__).parent / "fixtures" / "hybrid_session.csmf"
+FIXTURE = Path(__file__).parent / "fixtures" / "report_session.csmf"
 
 
 @pytest.fixture(scope="module")

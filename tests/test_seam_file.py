@@ -1,10 +1,10 @@
 """Reading the measurement seam file (SPEC.md §spec:report-input).
 
 The fixture is a real `display-measure characterize` artifact, not a
-hand-built one. Its black row is colorimetric and carries no spectrum,
-because a disciplined session reads its dark end with a colorimeter --
-which is exactly the shape that broke the analysis, and exactly what no
-hand-rolled fixture would have produced.
+hand-built one -- a report-grade session, carrying the blocks this
+analysis declares it requires (`display_report.requires`). Fixtures
+measured for something else are kept beside it and exercise the
+refusal, which is the case no hand-rolled fixture would have produced.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-FIXTURE = Path(__file__).parent / "fixtures" / "hybrid_session.csmf"
+FIXTURE = Path(__file__).parent / "fixtures" / "report_session.csmf"
 
 
 @pytest.fixture(scope="module")
@@ -32,15 +32,15 @@ class TestLoadsEveryRow:
         """The released colour-specio loader reads only the legacy spectral
         list, so a hybrid file came back with zero measurements and no
         error at all. The failure then surfaced far from its cause."""
-        assert len(analysis._data.measurements) == 72
+        assert len(analysis._data.measurements) == 795
 
-    def test_the_dark_row_is_colorimetric(self, analysis):
-        """A colorimeter has no spectrum. If this row ever arrives with
-        one, the fixture stopped exercising the case it exists for."""
-        kinds = [type(m).__name__ for m in analysis._data.measurements]
+    def test_the_black_readings_repeat(self, analysis):
+        """The noise floor is their spread, and one reading has none."""
+        import numpy as np
 
-        assert kinds.count("ColorimeterMeasurement") == 1
-        assert kinds.count("SPDMeasurement") == 71
+        blacks = np.all(analysis._data.test_colors == (0, 0, 0), axis=1)
+
+        assert int(blacks.sum()) == 20
 
 
 class TestToleratesRowsWithoutSpectra:
@@ -59,13 +59,19 @@ class TestToleratesRowsWithoutSpectra:
         assert black["XYZ"] is not None
         assert float(black["XYZ"][1]) >= 0
 
-    def test_reports_which_rows_lack_a_measured_spectrum(self, analysis):
-        """§spec:report-input: an analysis needing a spectrum reports what
-        it excluded and why, rather than treating absence as zero."""
-        excluded = analysis.rows_without_spectra
+    def test_reports_which_rows_lack_a_measured_spectrum(self):
+        """A disciplined session routes its dark end to a colorimeter,
+        which has no spectrum. Those rows are named rather than treated
+        as zero, which would read as a perfectly black display."""
+        from display_report import analyze_measurements_from_file
 
-        assert len(excluded) == 1
+        hybrid = Path(__file__).parent / "fixtures" / "hybrid_report_session.csmf"
+        analysis = analyze_measurements_from_file(str(hybrid))
 
+        # §spec:report-input: an analysis needing a spectrum reports
+        # what it excluded, rather than treating absence as zero.
+        assert len(analysis.rows_without_spectra) > 0
+        assert len(analysis.rows_without_spectra) < len(analysis._data.measurements)
 
 class TestRendersTheReport:
     def test_renders_a_pdf_from_the_seam_file(self, analysis):
@@ -88,10 +94,22 @@ class TestReadsTheContract:
 
         assert provenance is not None
 
-    def test_names_its_protocol(self, analysis):
-        assert analysis.provenance["protocol"]["name"] == (
-            "color-wrangler/characterize/3"
-        )
+    def test_names_the_blocks_it_measured(self, analysis):
+        """What a consumer matches on. A bundle name says nothing about
+        what an artifact carries; the block ids say exactly that."""
+        blocks = analysis.provenance["protocol"]["blocks"]
+
+        assert "anchors/1" in blocks
+        assert "noise-floor/1" in blocks
+
+    def test_the_blocks_satisfy_what_this_analysis_declares(self, analysis):
+        from display_report.requires import REQUIRES, blocks_carried, check
+
+        carried = blocks_carried(analysis.provenance)
+
+        assert carried is not None
+        assert set(REQUIRES) <= set(carried)
+        check(carried)
 
     def test_names_its_transfer_function(self, analysis):
         """A 12-bit gamma session shall not be read as 10-bit PQ."""
@@ -111,7 +129,10 @@ class TestStatesItsContract:
 
         assert "gamma 2.4" in line
         assert "12-bit" in line
-        assert "color-wrangler/characterize/3" in line
+        # The blocks, not a bundle name: two artifacts under one name
+        # can hold different measurements once blocks version apart.
+        assert "anchors/1" in line
+        assert "noise-floor/1" in line
         assert "declared by the file" in line
 
     def test_an_assumed_contract_says_so(self):
@@ -130,3 +151,38 @@ class TestExported:
 
         for name in ("SignalContract", "read_provenance"):
             assert name in module.__all__, f"{name} is not public"
+
+
+class TestRefusesAnArtifactMeasuredForSomethingElse:
+    """A config-grade artifact is readable and complete; it just carries
+    a different measurement. Saying so by name is what lets an operator
+    act -- the alternative was discovering it as a rejected patch mask
+    deep inside a figure.
+    """
+
+    def test_a_verify_grade_artifact_is_refused_by_block_name(self):
+        from display_report import analyze_measurements_from_file
+        from display_report.requires import UnsupportedArtifact
+
+        older = Path(__file__).parent / "fixtures" / "spectral_session.csmf"
+
+        with pytest.raises(UnsupportedArtifact, match="noise-floor"):
+            analyze_measurements_from_file(str(older))
+
+    def test_the_refusal_names_every_shortfall_at_once(self):
+        """An operator who has to re-measure should learn the whole list
+        on the first attempt, not one block per two-hour session."""
+        from display_report.requires import UnsupportedArtifact, check
+
+        with pytest.raises(UnsupportedArtifact) as raised:
+            check({"anchors": 1})
+
+        for block in ("noise-floor", "tracking", "volume-mesh", "white-repeat"):
+            assert block in str(raised.value)
+
+    def test_an_artifact_recording_no_blocks_is_not_refused(self):
+        """The reference format carries no protocol block at all, and is
+        judged on what it does contain."""
+        from display_report.requires import blocks_carried
+
+        assert blocks_carried({"colorimetry": {}}) is None
