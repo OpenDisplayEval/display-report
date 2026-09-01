@@ -65,6 +65,15 @@ class ReflectanceData:
         )
 
 
+class UnfilterableMeasurements(ValueError):
+    """The analysis cannot tell which patches are above the noise floor.
+
+    Raised rather than analyzing everything, because the alternative
+    quietly changes which measurements a report is built from
+    (SPEC.md §spec:report-input).
+    """
+
+
 class ColourPrecisionAnalysis:
     """Analyze a measurement list for various colorimetric properties, like
     dE2000 and dE ITP.
@@ -97,6 +106,28 @@ class ColourPrecisionAnalysis:
     def rows_without_spectra(self) -> npt.NDArray:
         """Indices of rows an analysis needing a spectrum has to exclude."""
         return np.flatnonzero(~self._spectral_mask)
+
+    def _check_requirements(self) -> None:
+        """Refuse an artifact that does not carry what this analysis reads.
+
+        Checked once, against the blocks the artifact records, rather
+        than discovered as a missing key somewhere inside a figure. An
+        artifact recording no blocks is not refused here: the reference
+        format and third-party files carry none, and the analysis still
+        judges those on what they do contain (§spec:report-input).
+        """
+        from display_report.requires import blocks_carried, check
+
+        try:
+            provenance = self.provenance
+        except Exception:
+            # No provenance block at all: the reference format, or a
+            # third party's. Nothing to check against.
+            return
+        carried = blocks_carried(provenance)
+        if carried is None:
+            return
+        check(carried)
 
     @property
     def provenance(self) -> dict:
@@ -139,44 +170,80 @@ class ColourPrecisionAnalysis:
         -------
         NDArrayBoolean
         """
-        keep = np.ones(len(self._data.measurements), dtype=bool)
-
-        # The noise floor is derived from the spread of the black readings'
-        # spectra. A disciplined session routes black to a colorimeter, which
-        # has none, and a session whose black readings are identical has a
-        # spread of zero -- either way there is no floor to compare against.
-        # Skipping the filter keeps every row; deriving it from nothing would
-        # divide by zero and reject all of them.
+        # The floor is the *spread* across repeated black readings, which
+        # is why the protocol reads black twenty times. One reading has no
+        # spread: the divisor becomes that reading's deviation from a
+        # smoothed version of itself, which is zero to rounding and of
+        # either sign, and every patch in the file is rejected.
+        #
+        # It is tempting to keep every row when the floor is not
+        # computable. That is what this did, and it was wrong: it silently
+        # widened the set of patches the whole report is computed from,
+        # letting readings the instrument cannot separate from black into
+        # the chromaticity diagram, where they have no chromaticity to
+        # contribute. Two runs of one display then produce reports that
+        # cannot be compared, with nothing on either to say they were
+        # built differently. Refusing is the honest answer.
         black_spectral = [m for m in self.black["measurements"] if hasattr(m, "spd")]
-        if self.black.get("spd") is None or not black_spectral:
-            return keep
 
-        noise = np.mean(
-            np.max(
-                np.sum(
-                    [m.spd.values for m in black_spectral] - self.black["spd"].values,
-                    axis=1,
-                ),
-                0,
+        if self.black.get("spd") is not None and len(black_spectral) > 1:
+            # The measured path, unchanged: spectral power against the
+            # spread of the black spectra.
+            noise = np.mean(
+                np.max(
+                    np.sum(
+                        [m.spd.values for m in black_spectral]
+                        - self.black["spd"].values,
+                        axis=1,
+                    ),
+                    0,
+                )
             )
-        )
-        if not np.isfinite(noise) or noise <= 0:
-            return keep
+            signal = np.asarray(
+                [max(m.power - self.black["power"], 0) for m in self._data.measurements]
+            )
+        elif len(self.black["measurements"]) > 1:
+            # A disciplined session routes its dark end to a colorimeter,
+            # which has no spectrum. Luminance is measured either way, and
+            # the floor is the same quantity in a different unit: the
+            # spread of the repeated black readings. Same 3 dB threshold,
+            # and the substitution is stated rather than silent
+            # (§spec:report-input).
+            black_Y = np.asarray([m.XYZ[1] for m in self.black["measurements"]])
+            noise = float(np.max(np.abs(black_Y - np.mean(black_Y))))
+            signal = np.asarray(
+                [
+                    max(m.XYZ[1] - self.black["XYZ"][1], 0)
+                    for m in self._data.measurements
+                ]
+            )
+        else:
+            # Reached only by an artifact that records no blocks at all
+            # -- the reference format, or a third party's. One that
+            # records them is refused at load with the block named
+            # (`display_report.requires`), which is actionable in a way
+            # that discovering it here is not.
+            raise UnfilterableMeasurements(
+                "this file carries one black reading, and the noise floor "
+                "the analysis filters patches against is the spread across "
+                "repeated ones -- with a single reading the divisor is "
+                "that reading's deviation from itself, which is zero to "
+                "rounding and rejects every patch in the file. The "
+                "`noise-floor` measurement block is what carries the "
+                "repeats."
+            )
 
-        power = np.asarray(
-            [
-                max(getattr(m, "power", 0.0) - (self.black["power"] or 0.0), 0)
-                if hasattr(m, "spd")
-                else np.inf
-                for m in self._data.measurements
-            ]
-        )
-        with np.errstate(divide="ignore", invalid="ignore"):
-            snr = 10 * np.log10(power / noise)
-        # A row without a spectrum has no power to compare; it is kept on the
-        # strength of its tristimulus rather than filtered on a figure it
-        # cannot produce.
-        return np.where(np.isnan(snr), True, snr > 3)
+        if not noise > 0:
+            raise UnfilterableMeasurements(
+                f"the black readings in this file vary by {noise:g}, so the "
+                "noise floor is not a positive number to divide by. Either "
+                "the readings are identical -- a fixed-clock reproduction "
+                "run, or a double that returns a constant -- or the "
+                "instrument reported no variation at all."
+            )
+
+        snr = 10 * np.log10(signal / noise)
+        return snr > 3
 
     @property
     def _analysis_mask(self) -> NDArrayBoolean:
@@ -626,6 +693,10 @@ class ColourPrecisionAnalysis:
             # Special case where a few data files were created with earlier
             # worse versions of specio
             self._data.test_colors = self._data.test_colors / 255.0
+
+        # At construction, not at first figure. An artifact that cannot
+        # be analyzed should say so before anything is computed from it.
+        self._check_requirements()
 
 
 def analyze_measurements_from_file(filename: str) -> ColourPrecisionAnalysis:

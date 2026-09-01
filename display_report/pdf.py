@@ -701,12 +701,20 @@ def _contract_line(data: ColourPrecisionAnalysis) -> str:
     if contract.peak_luminance:
         parts.append(f"{contract.peak_luminance:g} cd/m²")
 
+    # The blocks where the artifact records them, and the protocol name
+    # only where it does not. A reader checking this page against the
+    # session needs to know which measurements are behind it, and a
+    # bundle name does not carry that -- two artifacts under one name
+    # can hold different measurements once blocks version separately.
     try:
-        protocol = (data.provenance.get("protocol") or {}).get("name")
+        protocol = data.provenance.get("protocol") or {}
     except Exception:
-        protocol = None
-    if protocol:
-        parts.append(str(protocol))
+        protocol = {}
+    blocks = protocol.get("blocks")
+    if blocks:
+        parts.append(", ".join(str(block) for block in blocks))
+    elif protocol.get("name"):
+        parts.append(str(protocol["name"]))
 
     parts.append(
         "declared by the file"

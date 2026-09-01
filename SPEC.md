@@ -136,3 +136,15 @@ which surface invokes it is a separate question.
 Importing this package costs nothing beyond the standard library —
 public names resolve lazily — so a caller that only renders never pays
 for what it does not use.
+
+**The diagrams are available one at a time, and they are the report's
+own.** A surface showing a live view of a measurement wants the figures
+individually; it shall not get a second implementation of them. What is
+shown live and what is downloaded are the same drawing, because both come
+from the same functions — a figure can drift from the report only by the
+report changing. A caller names a figure rather than importing the
+function that draws it, so the naming is the contract and this layer
+stays free to rearrange the page.
+
+Rendered alone, a figure is sized for being looked at rather than for
+being a tile of a letter-sized page.
