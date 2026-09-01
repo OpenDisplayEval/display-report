@@ -1,3 +1,17 @@
+# [0.2.0](https://github.com/OpenDisplayEval/display-report/compare/v0.1.0...v0.2.0) (2026-09-01)
+
+
+### Bug Fixes
+
+* **ci:** spell and format what the migrated analysis brought with it ([e0b9464](https://github.com/OpenDisplayEval/display-report/commit/e0b94640ce3c524af538fb2b683220e2964a509d))
+
+
+### Features
+
+* **figures:** render the report's diagrams one at a time ([8d41b43](https://github.com/OpenDisplayEval/display-report/commit/8d41b43ec6de434532830ebd1eb5029df220cb4a))
+* **figures:** render vector, not pixels ([2ead47b](https://github.com/OpenDisplayEval/display-report/commit/2ead47b446fad1c237d8b703934e48378ef82e41))
+* **requires:** state the measurement blocks this analysis reads ([efce499](https://github.com/OpenDisplayEval/display-report/commit/efce4999fc1d240c9c685e94ac50aca74ba49d1c))
+
 # [0.1.0](https://github.com/OpenDisplayEval/display-report/compare/v0.0.10...v0.1.0) (2026-08-31)
 
 
