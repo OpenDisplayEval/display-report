@@ -1,4 +1,4 @@
-"""The reproducible set as a solid (§spec:gamut-visualization).
+"""The reproducible set as a solid.
 
 A chromaticity triangle is one slice of a three-dimensional set, and it
 hides the thing that decides whether a colour is usable: the luminance

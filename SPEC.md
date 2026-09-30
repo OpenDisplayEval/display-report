@@ -1,10 +1,7 @@
 # display-report — Specification
 
 This layer's specification. The pipeline-wide architecture and the
-artifact chain live in
-[color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler);
-sections there are addressed by slug in backticks and resolve in that
-repository's SPEC.md.
+artifact chain live in the umbrella project's specification.
 
 ## Scope §spec:scope
 
@@ -15,18 +12,16 @@ serial port and no DeckLink, imports no device driver, and needs no
 rig: a machine that reports needs a file and nothing else.
 
 One tool touches instruments and signal hardware, and it is
-display-measure (`§spec:session-ownership`). This repository consumes
-what that tool emits.
+display-measure. This repository consumes what that tool emits.
 
 **Why the validator owns no measure path.** display-report validates
 either this pipeline or a display-side calibration, and its value is
 that it has no stake in the correction under test. A second measure
 path living inside it would be an ungated one — the session gates
-(`§spec:signal-contract`) live in display-measure, and a path that
-skips them measures a display in an undeclared state and renders a
-well-formed report of it. That is the failure the gates exist to
-prevent, reintroduced in the repository whose independence is the
-reason they matter.
+live in display-measure, and a path that skips them measures a display
+in an undeclared state and renders a well-formed report of it. That is
+the failure the gates exist to prevent, reintroduced in the repository
+whose independence is the reason they matter.
 
 **Reproducibility is a property of the seam, not of a bundled loop.**
 A third party reproduces a report by writing the seam file from
@@ -37,16 +32,16 @@ second device path inside the validator was never what delivered it.
 Not owned here: instrument and signal-generator access
 (display-measure), OCIO semantics and config generation
 (ocio-display-gen), the show manifest and the promotion decision
-(color-wrangler).
+(the umbrella project).
 
 ## Report input §spec:report-input
 
 *Status: complete*
 
-The report's input is one file: the measurement seam file
-(`§spec:measurement-seam`), carrying the measurements, the spectra
-behind them, the protocol that produced them, the declared signal
-contract, the attested panel state, and the hash chain.
+The report's input is one file: the measurement seam file, carrying
+the measurements, the spectra behind them, the protocol that produced
+them, the declared signal contract, the attested panel state, and the
+hash chain.
 
 Analysis is a pure function of that file. Two runs over one file
 produce one report.
@@ -61,7 +56,7 @@ catches it.
 
 **Rows without a measured spectrum are legible as such.** A
 disciplined session reads its dark end with a colorimeter, and those
-rows carry a reconstructed spectrum or none (`§spec:spectral-retention`).
+rows carry a reconstructed spectrum or none.
 An analysis needing a measured spectrum reports which rows it excluded
 and why, rather than treating a scaled estimate as a measurement.
 
@@ -113,8 +108,8 @@ judges from. Plot bounds derived from a hardcoded PQ inverse place the
 measured points wrongly on a gamma session's page — the chart renders,
 and it is wrong.
 
-The page's content — what figures it carries and what they
-discriminate — is specified in `§spec:report-metrics`.
+The umbrella project's specification defines the page's content:
+what figures it carries and what they discriminate.
 
 ## Programmatic surface §spec:report-api
 
@@ -126,9 +121,9 @@ rendered report as bytes. The command-line entry point is a caller
 like any other and holds no logic of its own.
 
 **Why an importable surface.** The operator's surface is a browser
-served from the session host (`§spec:web-ui`), and it generates the
-report from a loaded artifact without the operator leaving the page or
-learning a second tool. A caller reduced to shelling out to a CLI and
+served from the session host, and it generates the report from a
+loaded artifact without the operator leaving the page or learning a
+second tool. A caller reduced to shelling out to a CLI and
 scraping a path cannot report a failure precisely.
 display-report remains the only thing that decides what a report says;
 which surface invokes it is a separate question.

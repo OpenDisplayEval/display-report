@@ -1,15 +1,14 @@
-"""Gamut arithmetic for the situational-awareness view (§spec:gamut-visualization).
+"""Gamut arithmetic for the situational-awareness view.
 
 Everything here works in CIE 1976 u'v'. The 1931 xy diagram exaggerates
 green distances and crushes blue ones, which misleads exactly where
-narrow-band LED primaries land; artifacts record xy and views convert
-(§spec:gamut-visualization).
+narrow-band LED primaries land; artifacts record xy and views convert.
 
 **Coverage, never area ratio.** The fraction of a target a display can
 actually reproduce is bounded above by 1.0. The ratio of triangle areas
 is not, and it flatters a display that is large in a direction no
 content uses: the bench display measures 131.6% of Rec.709 by area and
-cannot reach Rec.709 blue (§spec:report-metrics).
+cannot reach Rec.709 blue.
 
 **A scalar hides where the shortfall is.** Coverage weights by
 chromaticity area, so a thin slice of unreachable colour reads as a
@@ -165,8 +164,7 @@ def primary_deficits(display: list[Point], standard: str) -> dict[str, float]:
     Read against the display's own native primaries rather than a
     standard's wherever the question is what a *configuration* costs: no
     display reaches Rec.709 blue, so that shortfall is a property of
-    the emitter and discriminates nothing between calibrations
-    (§spec:report-metrics).
+    the emitter and discriminates nothing between calibrations.
     """
     target = [uv_from_xy(*p) for p in STANDARD_GAMUTS[standard]]
     deficits = {}

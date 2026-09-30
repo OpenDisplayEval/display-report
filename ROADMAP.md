@@ -1,10 +1,7 @@
 # display-report — Roadmap
 
 This layer's roadmap. Cross-repo coordination and the pipeline-wide
-sequencing live in
-[color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler);
-workstreams there are addressed by slug in backticks and resolve in
-that repository's ROADMAP.md.
+sequencing live in the umbrella project's roadmap.
 
 ## Contract-driven analysis §road:contract-analysis-impl
 

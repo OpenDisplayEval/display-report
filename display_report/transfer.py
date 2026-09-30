@@ -1,4 +1,4 @@
-"""Transfer fidelity and quantization headroom (§spec:gamut-visualization).
+"""Transfer fidelity and quantization headroom.
 
 Two questions about the same ramp. Does the display follow the transfer
 function its contract declares, and is the encoding precise enough that
@@ -17,7 +17,7 @@ the eye can just detect, and it is what PQ was derived against. Using it
 here asks the same question of any encoding — a gamma contract at 12
 bits, a PQ contract at 10 — rather than asking whether a display tracks
 one particular curve. That generality is the point: it is the metric
-that survives changing the contract (§road:lut-transfer-probe).
+that survives changing the contract.
 
 Its threshold is not a hard line. Barten's model takes viewing distance,
 field size and spatial frequency, and the value used here is the peak of
@@ -46,7 +46,7 @@ __all__ = [
 Ramp = list[tuple[int, float]] | tuple[tuple[int, float], ...]
 
 # Readings at or under this are instrument noise rather than the display's
-# response; fitting through them fits the noise (§road:instrument-floors).
+# response; fitting through them fits the noise.
 FLOOR = 0.001
 
 # The spatial frequency Barten's sensitivity peaks near, cycles per
@@ -182,8 +182,7 @@ def quantization_headroom(
     measured. The ramp is driven at 12-bit codes, so a step at 10 bits
     is four of them: this is how one contract's quantization gets
     compared against another's on the same measured display, which is what
-    §road:lut-transfer-probe needs to settle whether a PQ-like LUT
-    contract beats the 12-bit gamma one.
+    settles whether a PQ-like LUT contract beats the 12-bit gamma one.
     """
     codes_per_step = 2.0 ** (MEASURED_BIT_DEPTH - bit_depth)
     rows: list[HeadroomRow] = []
