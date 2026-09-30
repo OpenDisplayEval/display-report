@@ -296,9 +296,8 @@ class ColourPrecisionAnalysis:
         tmp = self._black = {}
         tmp["measurements"] = measurements = self._data.measurements[mask]
 
-        # A disciplined session reads its dark end with a colorimeter
-        # (§spec:spectral-retention), so the black rows are exactly the ones
-        # most likely to carry no spectrum. Black's tristimulus is measured
+        # A disciplined session reads its dark end with a colorimeter, so
+        # the black rows are exactly the ones most likely to carry no spectrum. Black's tristimulus is measured
         # either way; the spectral fields are only available when a black
         # row carried a spectrum, and are None rather than zero when not --
         # a zero here would read as a perfectly black display.

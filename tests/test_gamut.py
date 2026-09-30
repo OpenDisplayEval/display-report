@@ -1,8 +1,7 @@
-"""Gamut arithmetic for the situational-awareness view (§spec:gamut-visualization).
+"""Gamut arithmetic for the situational-awareness view.
 
 The numbers here are the bench display's, measured under three different
-panel configurations, because the arithmetic's job is to tell them apart
-(§spec:report-metrics).
+panel configurations, because the arithmetic's job is to tell them apart.
 """
 
 import pytest
@@ -42,7 +41,7 @@ class TestCoverage:
     def test_coverage_never_exceeds_one(self) -> None:
         """The bench display's triangle is larger than Rec.709's by area and
         still cannot reproduce all of it — the distinction area ratios
-        lose (§spec:report-metrics)."""
+        lose."""
         for primaries in (AUG12, AUG29):
             for name in STANDARD_GAMUTS:
                 target = [uv_from_xy(*p) for p in STANDARD_GAMUTS[name]]

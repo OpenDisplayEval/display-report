@@ -1,4 +1,4 @@
-"""Transfer fidelity and quantization headroom (§spec:gamut-visualization).
+"""Transfer fidelity and quantization headroom.
 
 The bench display's own gray ramp, dark-room capture. Its declared contract
 is a 2.35 power law and it does not follow one: the measured response
@@ -108,7 +108,7 @@ class TestHeadroom:
 
 class TestBitDepthComparison:
     """The same measured display, judged against a different encoding — the
-    comparison §road:lut-transfer-probe needs."""
+    comparison that settles which LUT contract to run."""
 
     def test_fewer_bits_make_every_step_coarser(self) -> None:
         twelve = {

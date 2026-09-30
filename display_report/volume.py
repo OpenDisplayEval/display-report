@@ -1,4 +1,4 @@
-"""The reproducible set as a solid (§spec:gamut-visualization).
+"""The reproducible set as a solid.
 
 A chromaticity triangle is one slice of a three-dimensional set, and it
 hides what decides whether a colour is usable: the luminance it is
@@ -15,7 +15,7 @@ channels add, and a fiction on one whose channels do not — so
 rather than drawing a capability nobody measured. This display sums to
 within 0.75% of its measured white, which is what earns the picture.
 
-**Why CIELAB.** §spec:report-metrics asks for a luminance-inclusive
+**Why CIELAB.** The report's metrics call for a luminance-inclusive
 volume in a perceptually uniform space, so that equal distances in the
 picture mean roughly equal perceived differences and the solid's shape
 carries information rather than the space's distortion. L* is relative
