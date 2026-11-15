@@ -1,0 +1,154 @@
+name: quality
+
+# The required checks are the two summary jobs at the end, `quality /
+# governance` and `quality / correctness`; everything above them is a class
+# job they depend on. A ruleset requires only the summary names, so class
+# jobs can be added or renamed without touching a ruleset.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  # Flywheel's release and back-merge commits and promotion pull requests
+  # carry no reviewable change, so class jobs skip on them and the summary
+  # jobs still pass.
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      derived_release_commit: ${{ steps.classify.outputs.derived_release_commit }}
+      promotion_pr: ${{ steps.classify.outputs.promotion_pr }}
+    steps:
+      - id: classify
+        uses: point-source/flywheel/classify@59758d1940ebe054ce9fdd4b7a7dc79a0cf235e0 # v2.1.0
+
+  # Governance class.
+
+  # notation's reusable governance lint; it reports as `governance / lint`.
+  governance:
+    needs: classify
+    if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
+    uses: repentsinner/symphonize/.github/workflows/governance-lint.yml@c923c65b044d3ab7866520b5bfba5fca939aac6f # notation--v0.2.16
+
+  # Correctness class, carried over from the former ci.yml.
+
+  # ruff and pyright are pinned to py314 in pyproject.toml, so one leg
+  # carries the full lint signal; only pytest is version-sensitive.
+  lint:
+    needs: classify
+    if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from tag history
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.14"
+      - run: uv sync --all-groups
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run pyright
+
+  spellcheck:
+    needs: classify
+    if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - run: npx cspell "display_report/**/*" "tests/**/*" "*.md"
+
+  # pyproject declares >=3.12,<3.15, but the suite only passes on 3.14 today:
+  #
+  #   3.12  colour-specio's ResponseCode enum calls _add_value_alias_,
+  #         which does not exist before 3.13 — import fails outright.
+  #   3.13  modules without `from __future__ import annotations` evaluate
+  #         annotations eagerly and hit NameError on TYPE_CHECKING-only
+  #         imports. 3.14 hides this via PEP 649 deferred evaluation.
+  #
+  # Widen this matrix and the requires-python bound together, once fixed.
+  test:
+    needs: classify
+    if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from tag history
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --all-groups
+      # Measurement hardware is absent on runners. The package imports
+      # without the DeckLink SDK by design, and the suite asserts that.
+      - run: uv run pytest
+
+  actionlint:
+    needs: classify
+    if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Digest copied from the release's checksums file, so a replaced
+      # release asset fails here rather than running.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl -sfLo "$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+
+      # actionlint skips run: blocks silently when shellcheck is absent, so
+      # its absence has to fail the job rather than pass it.
+      - name: Lint workflows
+        run: |
+          command -v shellcheck
+          "$RUNNER_TEMP/actionlint"
+
+  # Summary jobs carry the required check names. Each runs whatever its
+  # dependencies' outcome, because GitHub counts a skipped required check as
+  # passing. classify is a dependency too: if it fails, the class jobs skip.
+  quality-governance:
+    name: quality / governance
+    needs: [classify, governance]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when a governance job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          exit 1
+
+  quality-correctness:
+    name: quality / correctness
+    needs: [classify, lint, spellcheck, test, actionlint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when a correctness job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          exit 1
