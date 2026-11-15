@@ -32,7 +32,7 @@ jobs:
   governance:
     needs: classify
     if: needs.classify.outputs.derived_release_commit != 'true' && needs.classify.outputs.promotion_pr != 'true'
-    uses: repentsinner/symphonize/.github/workflows/governance-lint.yml@1025d00f32bb7ffdfcddf0385be8e0935559b8c9 # notation--v0.2.12
+    uses: repentsinner/symphonize/.github/workflows/governance-lint.yml@c923c65b044d3ab7866520b5bfba5fca939aac6f # notation--v0.2.16
 
   # Correctness class, carried over from the former ci.yml.
 
