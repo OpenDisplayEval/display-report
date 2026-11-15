@@ -4,7 +4,18 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, edited]
 concurrency:
   group: flywheel-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # A run whose job will skip must not cancel one that will not. A bot edit
+  # (the App rewriting a title, or a dependency bot updating its own body on
+  # a rebase) arrives moments after the push it accompanies, cancels the
+  # in-flight run, and then skips itself on the guard below. The head commit
+  # is left with no flywheel/conventional-commit check, and because the
+  # action posts that check rather than a job of this workflow, no skipped
+  # check run counts as passing: the required check never appears and the
+  # pull request cannot merge. Mirrors the conduct job's `if`, so the two
+  # have to move together.
+  cancel-in-progress: >-
+    ${{ github.event.pull_request.draft == false
+    && (github.event.action != 'edited' || github.event.sender.type == 'User') }}
 jobs:
   conduct:
     # Skip drafts; ignore `edited` events from bots (only a human editing the
