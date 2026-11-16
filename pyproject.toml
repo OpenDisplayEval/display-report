@@ -50,6 +50,7 @@ dev = [
 colour-specio = { git = "https://github.com/repentsinner/colour-specio", rev = "981d48627c7b2a02e14897500fa1a67da8f61c8a" }
 
 [tool.uv]
+required-version = ">=0.12"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
