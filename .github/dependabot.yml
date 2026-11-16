@@ -18,11 +18,17 @@
 version: 2
 
 updates:
+  # The git dependency, colour-specio, stays manual: Dependabot's uv parser
+  # drops a direct reference's URL and looks the name up on PyPI, so it skips
+  # it without a PR or an error (dependabot/dependabot-core#16129).
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # A release has a week to draw a follow-up fix before it is proposed.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "fix"
       prefix-development: "chore"
@@ -36,9 +42,26 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore"
       include: "scope"
     groups:
       github-actions:
+        patterns: ["*"]
+
+  # Hook revs in .pre-commit-config.yaml. Keep the ruff-pre-commit rev equal
+  # to the ruff version in uv.lock, which the lint job runs.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      pre-commit-hooks:
         patterns: ["*"]
