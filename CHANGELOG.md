@@ -1,3 +1,10 @@
+## [0.2.14](https://github.com/OpenDisplayEval/display-report/compare/v0.2.13...v0.2.14) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** bump filelock from 3.24.2 to 4.2.1 ([#63](https://github.com/OpenDisplayEval/display-report/issues/63)) ([f33da3f](https://github.com/OpenDisplayEval/display-report/commit/f33da3f75ba8dedaedb7eb660aa046a82e783bac))
+
 ## [0.2.13](https://github.com/OpenDisplayEval/display-report/compare/v0.2.12...v0.2.13) (2026-11-16)
 
 
