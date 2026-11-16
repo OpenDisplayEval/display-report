@@ -1,3 +1,10 @@
+## [0.2.15](https://github.com/OpenDisplayEval/display-report/compare/v0.2.14...v0.2.15) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** bump nbconvert from 7.17.1 to 7.17.2 ([#75](https://github.com/OpenDisplayEval/display-report/issues/75)) ([a31080c](https://github.com/OpenDisplayEval/display-report/commit/a31080c13477dadf47a10cde85b1be43b9fff5de))
+
 ## [0.2.14](https://github.com/OpenDisplayEval/display-report/compare/v0.2.13...v0.2.14) (2026-11-16)
 
 
