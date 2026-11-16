@@ -1,3 +1,11 @@
+## [0.2.12](https://github.com/OpenDisplayEval/display-report/compare/v0.2.11...v0.2.12) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** bump soupsieve from 2.9 to 4.0 ([#71](https://github.com/OpenDisplayEval/display-report/issues/71)) ([c47f72f](https://github.com/OpenDisplayEval/display-report/commit/c47f72f7579962aa5122a79bfc78585305be69a1))
+* **deps:** bump virtualenv from 21.7.13 to 21.14.13 ([#64](https://github.com/OpenDisplayEval/display-report/issues/64)) ([5df2412](https://github.com/OpenDisplayEval/display-report/commit/5df24127da9d4844a7d4e9bb18ca5f1655617c43))
+
 ## [0.2.11](https://github.com/OpenDisplayEval/display-report/compare/v0.2.10...v0.2.11) (2026-11-16)
 
 
