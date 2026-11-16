@@ -1,3 +1,10 @@
+## [0.2.11](https://github.com/OpenDisplayEval/display-report/compare/v0.2.10...v0.2.11) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** bump tornado from 6.5.9 to 6.6.1 ([#72](https://github.com/OpenDisplayEval/display-report/issues/72)) ([87b60bd](https://github.com/OpenDisplayEval/display-report/commit/87b60bd257a60d81ec02e1553c40d952de6d88c5))
+
 ## [0.2.10](https://github.com/OpenDisplayEval/display-report/compare/v0.2.9...v0.2.10) (2026-10-15)
 
 
