@@ -1,3 +1,10 @@
+## [0.2.17](https://github.com/OpenDisplayEval/display-report/compare/v0.2.16...v0.2.17) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** bump mistune from 3.3.3 to 3.3.4 ([#81](https://github.com/OpenDisplayEval/display-report/issues/81)) ([d40392b](https://github.com/OpenDisplayEval/display-report/commit/d40392bcabe615194b326eca478dfc4a39f7189c))
+
 ## [0.2.16](https://github.com/OpenDisplayEval/display-report/compare/v0.2.15...v0.2.16) (2026-11-26)
 
 
