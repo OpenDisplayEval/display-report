@@ -1,3 +1,10 @@
+## [0.2.16](https://github.com/OpenDisplayEval/display-report/compare/v0.2.15...v0.2.16) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** bump the uv-minor-and-patch group with 2 updates ([#80](https://github.com/OpenDisplayEval/display-report/issues/80)) ([fe34a29](https://github.com/OpenDisplayEval/display-report/commit/fe34a29b1df6bebeb2433b5c9d0767c8fd44fd95))
+
 ## [0.2.15](https://github.com/OpenDisplayEval/display-report/compare/v0.2.14...v0.2.15) (2026-11-16)
 
 
